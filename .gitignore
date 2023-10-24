@@ -1,0 +1,9 @@
+## PDFs
+*.pdf
+
+## Work in Progress HTML
+*.md.html
+
+## Python
+.venv
+__pycache__
