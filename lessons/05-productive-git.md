@@ -81,11 +81,7 @@ def greet(name: str) -> str:
 
 ```python
 def greet(name: str) -> str:
-<<<<<<< HEAD
     return "Hello {}".format(name)
-=======
-    return f"Hello {name}"
->>>>>>> feature-branch 
 ```
 
 ---
