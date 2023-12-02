@@ -14,7 +14,8 @@ The following tools are used in this exercise:
 - `golangci-lint`
 - `virtualbox`
 - `podman`
-- `kind`
+- `podman-compose`
+- `k3s`
 - `kubectl`
 - `aws-cli`
 - `opentofu`
@@ -31,8 +32,8 @@ track your work with the help of a kanban board.
 1. Open [GitHub](https://github.com/) and login with your existing account
 2. Click on the plus sign in the upper right corner and select "New project"
 3. Select the "Board" template on the left side
-3. Change the project name above the picture to "Powercoders DevOps Track"
-4. Click on "Create"
+4. Change the project name above the picture to "Powercoders DevOps Track"
+5. Click on "Create"
 
 You will now see three columns: "Todo", "In Progress" and "Done".
 
@@ -64,10 +65,10 @@ exercise you will create the two repositories for the applications.
 
 1. Open [GitHub](https://github.com/) and login with your existing account
 2. Click on the plus sign in the upper right corner and select "New repository"
-3. Change the "Repository name" to "pygreeter"
+3. Change the "Repository name" to "docker-workflowpygreeter"
 4. Change the "Description" to "Simple Greeting REST API in Python"
 5. Leave the rest as it is and click "Create repository" on the bottom right
-7. Repeat these steps with "gogreeter" as "Repository name" and "Simple
+6. Repeat these steps with "gogreeter" as "Repository name" and "Simple
    Greeting REST API in Go"
 
 Think about the branching strategy and structure of commits you want to use.
@@ -76,8 +77,8 @@ Optional: The same thing could have been done with the following GitHub CLI
 commands.
 
 ```shell
-gh repo create pygreeter -d "Simple Greeting REST API in Python" --public 
-gh repo create gogreeter -d "Simple Greeting REST API in Go" --public 
+gh repo create pygreeter -d "Simple Greeting REST API in Python" --public
+gh repo create gogreeter -d "Simple Greeting REST API in Go" --public
 ```
 
 ## 4. Create the Applications
@@ -90,7 +91,7 @@ for something more advanced if you find the time. It is recommended that you use
 the same technologies so that you can apply the knowledge out of the different
 tasks on your custom application.
 
-### pygreeter 
+### pygreeter
 
 #### Cloning the Repository
 
@@ -100,9 +101,9 @@ tasks on your custom application.
 4. Execute the following command but replace URL with the URL that you just
    copied.
 
-    ```shell
-    git clone URL
-    ```
+   ```shell
+   git clone URL
+   ```
 
 Optional: The same thing could have been done with the following GitHub CLI
 command (replace USER with your GitHub username).
@@ -117,21 +118,21 @@ To continue you have to create a new virtual environment.
 
 1. Switch into the "pygreeter" directory
 
-    ```shell
-    cd pygreeter
-    ```
+   ```shell
+   cd pygreeter
+   ```
 
 2. Create the virtual environment
 
-    ```shell
-    python -m venv .venv
-    ```
+   ```shell
+   python -m venv .venv
+   ```
 
 3. Active the virtual environment
 
-    ```shell
-    source .venv/bin/activate
-    ```
+   ```shell
+   source .venv/bin/activate
+   ```
 
 This will create a virtual environment folder `.venv` within the application
 directory and enable it within your current terminal session. This virtual
@@ -147,16 +148,16 @@ place where the code execution will start from.
 1. Create a new file named `main.py`
 2. Enter the following code
 
-    ```python
-    if __name__ == "__main__":
-        print("pygreeter")
-    ```
+   ```python
+   if __name__ == "__main__":
+       print("pygreeter")
+   ```
 
 3. Execute the entry point
 
-    ```shell
-    python main.py
-    ```
+   ```shell
+   python main.py
+   ```
 
 After completing the final step you should see "pygreeter" in your console.
 
@@ -167,15 +168,15 @@ first and can then be imported and used.
 
 1. Install the `fastapi` package
 
-    ```shell
-    pip install "fastapi[all]"
-    ```
+   ```shell
+   pip install "fastapi[all]"
+   ```
 
 2. Store the versions of the dependencies
-    
-    ```shell
-    pip freeze > requirements.txt
-    ```
+
+   ```shell
+   pip freeze > requirements.txt
+   ```
 
 #### Create Greeting Logic
 
@@ -186,12 +187,12 @@ generic way of greeting.
 1. Create a new file named `greeter.py`
 2. Create the core logic
 
-    ```python
-    def greet(name: str) -> str:
-        if len(name) == 0:
-            return f"Hello World!"
-        return f"Hello {name}!"
-    ```
+   ```python
+   def greet(name: str) -> str:
+       if len(name) == 0:
+           return f"Hello World!"
+       return f"Hello {name}!"
+   ```
 
 #### Create REST API
 
@@ -201,25 +202,25 @@ This is done with the help of the previously installed framework.
 
 1. Replace the content of `main.py` with the following code
 
-    ```python
-    from fastapi import FastAPI
-    from fastapi.responses import PlainTextResponse
-    import uvicorn
+   ```python
+   from fastapi import FastAPI
+   from fastapi.responses import PlainTextResponse
+   import uvicorn
 
-    from greeter import greet
+   from greeter import greet
 
-    app = FastAPI()
-
-
-    @app.get("/", response_class=PlainTextResponse)
-    def get_greeting(name: str = "") -> str:
-        output = greet(name)
-        return output
+   app = FastAPI()
 
 
-    if __name__ == "__main__":
-        uvicorn.run(app, host="0.0.0.0", port=8080)
-    ```
+   @app.get("/", response_class=PlainTextResponse)
+   def get_greeting(name: str = "") -> str:
+       output = greet(name)
+       return output
+
+
+   if __name__ == "__main__":
+       uvicorn.run(app, host="0.0.0.0", port=8080)
+   ```
 
 This code initially defines the `app` that is specific to `fastapi`. Then it
 defines a function that is called when a `GET` call is made to the path `/`. The
@@ -256,16 +257,16 @@ To continue you have to create a new Go module.
 
 1. Switch into the "gogreeter" directory
 
-    ```shell
-    cd gogreeter
-    ```
+   ```shell
+   cd gogreeter
+   ```
 
 2. Set up a new module in the same directory (replace USER with your GitHub
    username)
 
-    ```shell
-    go mod init github.com/USER/gogreeter
-    ```
+   ```shell
+   go mod init github.com/USER/gogreeter
+   ```
 
 This will create a file named `go.mod` in the application directory
 containing the required information for Go to function.
@@ -278,21 +279,21 @@ place where the code execution will start from.
 1. Create a new file named `main.go`
 2. Enter the following code
 
-    ```go
-    package main
+   ```go
+   package main
 
-    import "fmt"
+   import "fmt"
 
-    func main() {
-        fmt.Println("gogreeter")
-    }
-    ```
+   func main() {
+       fmt.Println("gogreeter")
+   }
+   ```
 
 3. Execute the entry point
 
-    ```shell
-    go run .
-    ```
+   ```shell
+   go run .
+   ```
 
 After completing the final step you should see "gogreeter" in your console.
 
@@ -303,9 +304,9 @@ first and can then be imported and used.
 
 1. Install the `fiber` package
 
-    ```shell
-    go get github.com/gofiber/fiber/v2
-    ```
+   ```shell
+   go get github.com/gofiber/fiber/v2
+   ```
 
 #### Create Greeting Logic
 
@@ -317,18 +318,18 @@ generic way of greeting.
 2. Create a new file named `greeter.go` in the `greeter` folder
 3. Create the core logic
 
-    ```go
-    package greeter
+   ```go
+   package greeter
 
-    import "fmt"
+   import "fmt"
 
-    func Greet(name string) string {
-        if len(name) == 0 {
-            return "Hello World!"
-        }
-        return fmt.Sprintf("Hello %s!", name)
-    }
-    ```
+   func Greet(name string) string {
+       if len(name) == 0 {
+           return "Hello World!"
+       }
+       return fmt.Sprintf("Hello %s!", name)
+   }
+   ```
 
 #### Create REST API
 
@@ -339,31 +340,31 @@ This is done with the help of the previously installed framework.
 1. Replace the content of `main.go` with the following code (replace USER with
    your GitHub username)
 
-    ```go
-    package main
+   ```go
+   package main
 
-    import (
-        "net/http"
+   import (
+       "net/http"
 
-        "github.com/gofiber/fiber/v2"
-        "github.com/USER/gogreeter/greeter"
-    )
+       "github.com/gofiber/fiber/v2"
+       "github.com/USER/gogreeter/greeter"
+   )
 
-    func main() {
-        app := fiber.New()
+   func main() {
+       app := fiber.New()
 
-        app.Get("/", getGreeting)
+       app.Get("/", getGreeting)
 
-        const ADDRESS = ":8080"
-        app.Listen(ADDRESS)
-    }
+       const ADDRESS = ":8080"
+       app.Listen(ADDRESS)
+   }
 
-    func getGreeting(c *fiber.Ctx) error {
-        input := c.Query("name")
-        output := greeter.Greet(input)
-        return c.Status(http.StatusOK).SendString(output)
-    }
-    ```
+   func getGreeting(c *fiber.Ctx) error {
+       input := c.Query("name")
+       output := greeter.Greet(input)
+       return c.Status(http.StatusOK).SendString(output)
+   }
+   ```
 
 This code initially defines the `app` that is specific to `fiber`. Then it
 registers a function that is called when a `GET` call is made to the path `/`.
@@ -387,27 +388,27 @@ of built-in types like objects and arrays.
 1. Create a file named `test_greeter.py`
 2. Create a test with multiple cases for the `greet` function
 
-    ```python
-    import unittest
+   ```python
+   import unittest
 
-    from greeter import greet
+   from greeter import greet
 
 
-    class TestGreeter(unittest.TestCase):
-        def test_greet(self):
-            cases = [
-                {"name": "zhews", "expected_output": "Hello zhews!"},
-                {"name": "pygreeter", "expected_output": "Hello pygreeter!"},
-                {"name": "", "expected_output": "Hello World!"},
-                {"name": " ", "expected_output": "Hello World!"},
-            ]
-            for case in cases:
-                with self.subTest(name=case.get("name")):
-                    input = case.get("name")
-                    expected_output = case.get("expected_output")
-                    output = greet(input)
-                    self.assertEqual(output, expected_output)
-    ```
+   class TestGreeter(unittest.TestCase):
+       def test_greet(self):
+           cases = [
+               {"name": "zhews", "expected_output": "Hello zhews!"},
+               {"name": "pygreeter", "expected_output": "Hello pygreeter!"},
+               {"name": "", "expected_output": "Hello World!"},
+               {"name": " ", "expected_output": "Hello World!"},
+           ]
+           for case in cases:
+               with self.subTest(name=case.get("name")):
+                   input = case.get("name")
+                   expected_output = case.get("expected_output")
+                   output = greet(input)
+                   self.assertEqual(output, expected_output)
+   ```
 
 This creates tests for the `greet` function of the `greeter` module with the
 help of the built-in `unittest` module. At first, it tests with two different
@@ -418,25 +419,25 @@ anything that could go wrong?
 
 1. Run the tests with the `unittest` module
 
-    ```shell
-    python -m unittest
-    ```
+   ```shell
+   python -m unittest
+   ```
 
-In the output you should see the last test case failing. Think about the logic we
-added, why is it not returning "Hello World!"? In the greeting logic we check
-for an empty but not a blank string.
+In the output you should see the last test case failing. Think about the logic
+you added, why is it not returning "Hello World!"? In the greeting logic you
+check for an empty but not a blank string.
 
 #### Fix Code
 
 1. Change the greet function to clean the name before checking for its length
 
-    ```python
-    def greet(name: str) -> str:
-        cleaned_name = name.strip()
-        if len(cleaned_name) == 0:
-            return "Hello World!"
-        return f"Hello {name}!"
-    ```
+   ```python
+   def greet(name: str) -> str:
+       cleaned_name = name.strip()
+       if len(cleaned_name) == 0:
+           return "Hello World!"
+       return f"Hello {name}!"
+   ```
 
 The `strip` method removes any leading and trailing white spaces from the
 string. So in case the string would have only been filled with white spaces it
@@ -446,9 +447,9 @@ would then be an empty string and our length check takes affect.
 
 1. Run the tests with the `unittest` module
 
-    ```shell
-    python -m unittest
-    ```
+   ```shell
+   python -m unittest
+   ```
 
 All tests should now be passing.
 
@@ -460,46 +461,46 @@ All tests should now be passing.
 2. Create a file named `greeter_test.go`
 3. Create a test with multiple cases for the `greet` function
 
-    ```go
-    package greeter
+   ```go
+   package greeter
 
-    import (
-        "fmt"
-        "testing"
-    )
+   import (
+       "fmt"
+       "testing"
+   )
 
-    func TestGreet(t *testing.T) {
-        testCases := []struct {
-            name           string
-            expectedOutput string
-        }{
-            {
-                name:           "zhews",
-                expectedOutput: "Hello zhews!",
-            },
-            {
-                name:           "gogreeter",
-                expectedOutput: "Hello gogreeter!",
-            },
-            {
-                name:           "",
-                expectedOutput: "Hello World!",
-            },
-            {
-                name:           " ",
-                expectedOutput: "Hello World!",
-            },
-        }
-        for _, testCase := range testCases {
-            t.Run(fmt.Sprintf("Name: %s", testCase.name), func(tc *testing.T) {
-                output := Greet(testCase.name)
-                if testCase.expectedOutput != output {
-                    tc.Fatalf("expected: %s, actual: %s", testCase.expectedOutput, output)
-                }
-            })
-        }
-    }
-    ```
+   func TestGreet(t *testing.T) {
+       testCases := []struct {
+           name           string
+           expectedOutput string
+       }{
+           {
+               name:           "zhews",
+               expectedOutput: "Hello zhews!",
+           },
+           {
+               name:           "gogreeter",
+               expectedOutput: "Hello gogreeter!",
+           },
+           {
+               name:           "",
+               expectedOutput: "Hello World!",
+           },
+           {
+               name:           " ",
+               expectedOutput: "Hello World!",
+           },
+       }
+       for _, testCase := range testCases {
+           t.Run(fmt.Sprintf("Name: %s", testCase.name), func(tc *testing.T) {
+               output := Greet(testCase.name)
+               if testCase.expectedOutput != output {
+                   tc.Fatalf("expected: %s, actual: %s", testCase.expectedOutput, output)
+               }
+           })
+       }
+   }
+   ```
 
 This creates tests for the `Greet` function of the `greeter` module with the
 help of the built-in `testing` module. At first, it tests with two different
@@ -510,35 +511,34 @@ anything that could go wrong?
 
 1. Run the tests with the `test` sub command
 
-    ```shell
-    go test ./...
-    ```
+   ```shell
+   go test ./...
+   ```
 
-In the output you should see the last test case failing. Think about the logic we
-added, why is it not returning "Hello World!"? In the greeting logic we check
-for an empty but not a blank string.
+In the output you should see the last test case failing. Think about the logic
+you added, why is it not returning "Hello World!"? In the greeting logic you
+check for an empty but not a blank string.
 
 #### Fix Code
 
 1. Change the greet function to clean the name before checking for its length
 
-    ```go
-    package greeter
+   ```go
+   package greeter
 
-    import (
-        "fmt"
-        "strings"
-    )
+   import (
+       "fmt"
+       "strings"
+   )
 
-    func Greet(name string) string {
-        cleanedName := strings.TrimSpace(name)
-        if len(cleanedName) == 0 {
-            return "Hello World!"
-        }
-        return fmt.Sprintf("Hello %s!", name)
-    }
-    ```
-
+   func Greet(name string) string {
+       cleanedName := strings.TrimSpace(name)
+       if len(cleanedName) == 0 {
+           return "Hello World!"
+       }
+       return fmt.Sprintf("Hello %s!", name)
+   }
+   ```
 
 The `TrimSpace` method removes any leading and trailing white spaces from the
 string. So in case the string would have only been filled with white spaces it
@@ -548,8 +548,1592 @@ would then be an empty string and our length check takes affect.
 
 1. Run the tests with the `test` sub command
 
-    ```shell
-    go test ./...
-    ```
+   ```shell
+   go test ./...
+   ```
 
 All tests should now be passing.
+
+## 6. Add Continuous Integration
+
+To create an instant feedback loop you will add continuous integration to both
+projects. In one project you will use GitHub Actions in the other one you will
+use Jenkins. In both projects you will first clone the repository then check if
+the code has been correctly formatted after that lint the code, then run all the
+unit tests and in the end build a container image. The introduction to
+containers will follow for now think about container images as software that
+contains all the dependencies required for the application to run.
+
+### pygreeter
+
+For pygreeter you are going to use GitHub Actions. You want the workflow to
+run on every push independent of the branch it is currently on.
+
+#### Create the Containerfile
+
+1. Create a file named `Containerfile` in the root of the project
+2. Add the following content to the file
+
+   ```Dockerfile
+   FROM python:3.12
+   WORKDIR /code
+   COPY requirements.txt /code/requirements.txt
+   RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
+   COPY *.py /code/
+   CMD ["python", "main.py"]
+   ```
+
+This `Containerfile` is in other projects also known as `Dockerfile`. It
+contains the instructions on how the application should be built and then run.
+In this case it fetches another container image as starting point. From there it
+tells Podman to execute all the commands in the `/code` directory. Then it copies
+the dependencies you have defined into the `/code` and installs them with `pip`.
+After that it copies your code into the `/code` directory. Finally, it tells
+Podman that the entry point of the container is `uvicorn`.
+
+#### Build and Test the Container
+
+1. Build the container
+
+   ```bash
+   podman build -t pygreeter .
+   ```
+
+2. Test out the container
+
+   ```bash
+   podman run -p 8080:8080 pygreeter:latest
+   ```
+
+3. Open the application in your browser on http://localhost:8080
+4. Make sure it greets with provided names by passing query parameters to the
+   URL http://localhost:8080?name=NAME (replace NAME with your name).
+5. Stop the container by pressing CTRL+C
+
+With the first command you told Podman to execute the steps you have defined in
+the `Containerfile` and store it under the tag `pygreeter` as you only added the
+name there will by default be the suffix `:latest`. With the container image now
+being available you tell Podman to run the image with the second command. In the
+same command you tell Podman that it should forward traffic going to port 8080
+on your device to port 8080 within the container. Because of that you are then
+able to access the website in your browser. As the container is running as an
+active process in the current terminal session you will have to stop it by
+clicking CTRL+C.
+
+#### Add the Workflow
+
+1. Create the `.github/workflows` folders in the root of your project
+
+   ```bash
+   mkdir -p .github/workflows
+   ```
+
+2. Create a file named `ci-cd.yaml` in the folder you have just created
+
+   ```yaml
+   on: [push]
+
+   jobs:
+     verify:
+       runs-on: ubuntu-latest
+       steps:
+         - uses: "actions/checkout@v4"
+         - uses: "actions/setup-python@v4"
+           with:
+             python-version: "3.12"
+             cache: "pip"
+         - run: "python -m pip install --upgrade pip"
+         - run: "pip install -r requirements.txt"
+         - run: "pip install black pylint"
+         - run: "black --check ."
+         - run: "pylint *.py --disable=C"
+         - run: "python -m unittest"
+
+     build:
+       runs-on: ubuntu-latest
+       steps:
+         - uses: "actions/checkout@v4"
+         - uses: "redhat-actions/buildah-build@v2"
+           with:
+             image: "pygreeter"
+             tags: "latest ${{ github.sha }}"
+             containerfiles: "./Containerfile"
+   ```
+
+This adds a workflow with two jobs for your pygreeter repository. The first job
+does the verify part. It first clones the repository. Then install python with
+version 3.12 and tells GitHub to cache the dependencies of `pip`. After that it
+upgrades `pip`. Then it installs the dependencies of your application and the
+tools used to verify. Finally, it does the verification. `black` is used to
+check the formatting of the application. `pylint` is used to lint the
+application code disabling some conventions that are not useful for your
+project. The built-in `unittest` module is then used to execute the tests.
+
+#### Check the Output of the Workflow
+
+1. Open [GitHub](https://github.com/) and login with your existing account
+2. Search for the "pygreeter" on the left side and click on it
+3. Click on `Actions`
+4. Click on the latest workflow below `All workflows`
+5. Checkout the output of the `verify` job
+6. Checkout the output of the `build` job
+
+As you can see the `verify` job failed and the `build` job passed. Why did the
+`verify` job fail? `pylint` detected that we are naming a variable `input` this
+name overlaps with the built-in `input` function. So in case someone wants to
+use the `input` method within the same scope it would not work as expected.
+
+#### Fix the Code
+
+1. Open the `test_greeter.py` file
+2. Change the variable on line 16 from `input` to `name`
+3. Again check the output of the work
+
+### gogreeter
+
+For gogreeter you are going to use Jenkins. You want a pipeline to
+run on every push independent of the branch it is currently on.
+
+#### Create the Containerfile
+
+1. Create a file named `Containerfile` in the root of the project
+2. Add the following content to the file
+
+   ```Dockerfile
+   FROM golang:1.21 AS build
+   WORKDIR /code
+   COPY go.mod go.sum /code/
+   RUN go mod download && go mod verify
+   COPY main.go /code/
+   COPY greeter /code/greeter
+   RUN CGO_ENABLED=0 go build -v -o /code/bin/gogreeter .
+
+   FROM gcr.io/distroless/static-debian12:nonroot AS run
+   WORKDIR /run
+   COPY --from=build /code/bin/gogreeter /run/gogreeter
+   CMD ["/run/gogreeter"]
+   ```
+
+This `Containerfile` is in other projects also known as `Dockerfile`. It
+contains the instructions on how the application should be built and then run.
+In this case it fetches another container image as starting point. From there it
+tells Podman to execute all the commands in the `/code` directory. Then it copies
+the modules you have defined into the `/code`, installs and verifies them.
+After that it copies your code into the `/code` directory. Then it creates the
+binary of the application and fetches a new container images as starting point.
+From this starting point it defines the new directory to execute commands in is
+`/run` then copies the new binary into the `/run` directory. Finally, it tells
+Podman that the entry point of the container is the built binary.
+
+#### Build and Test the Container
+
+1. Build the container
+
+   ```bash
+   podman build -t gogreeter .
+   ```
+
+2. Test out the container
+
+   ```bash
+   podman run -p 8080:8080 gogreeter:latest
+   ```
+
+3. Open the application in your browser on http://localhost:8080
+4. Make sure it greets with provided names by passing query parameters to the
+   URL http://localhost:8080?name=NAME (replace NAME with your name).
+5. Stop the container by pressing CTRL+C
+
+With the first command you told Podman to execute the steps you have defined in
+the `Containerfile` and store it under the tag `gogreeter` as you only added the
+name there will by default be the suffix `:latest`. With the container image now
+being available you tell Podman to run the image with the second command. In the
+same command you tell Podman that it should forward traffic going to port 8080
+on your device to port 8080 within the container. Because of that you are then
+able to access the website in your browser. As the container is running as an
+active process in the current terminal session you will have to stop it by
+clicking CTRL+C.
+
+#### Preparing Jenkins
+
+As we covered in the presentation Jenkins is a solution that has to be hosted on
+premise. Because of that you have to deploy it yourself. To do that you will use
+`podman-compose`. A bigger introduction to containers will follow. For now, you
+can think of `podman-compose` as a way to start and connect multiple containers
+together.
+
+1. Create a folder named `infra`
+2. Create a file named `Containerfile` in the newly created folder
+3. Add the following content to the file
+
+   ```Dockerfile
+   FROM jenkins/jenkins:2.426.1-jdk17
+   USER root
+   RUN apt-get update && apt-get install -y lsb-release
+   RUN curl -fsSLo /usr/share/keyrings/docker-archive-keyring.asc \
+   https://download.docker.com/linux/debian/gpg
+   RUN echo "deb [arch=$(dpkg --print-architecture) \
+   signed-by=/usr/share/keyrings/docker-archive-keyring.asc] \
+   https://download.docker.com/linux/debian \
+   $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list
+   RUN apt-get update && apt-get install -y docker-ce-cli golang-go
+   USER jenkins
+   RUN jenkins-plugin-cli --plugins "docker-workflow"
+   ```
+
+4. Create a file named `compose.yaml` in the newly created folder
+5. Add the following content
+
+   ```yaml
+   version: "3"
+   services:
+     docker:
+       image: "docker:dind"
+       hostname: "docker"
+       environment:
+         - "DOCKER_TLS_CERTDIR=/certs"
+       ports:
+         - "2376:2376"
+       privileged: true
+       volumes:
+         - "jenkins-docker-certs:/certs/client"
+         - "jenkins-data:/var/jenkins_home"
+       restart: "always"
+       dns:
+         - "9.9.9.9"
+         - "1.1.1.1"
+     jenkins:
+       build: "."
+       hostname: "jenkins"
+       ports:
+         - "8080:8080"
+         - "50000:50000"
+       environment:
+         - "DOCKER_HOST=tcp://docker:2376"
+         - "DOCKER_CERT_PATH=/certs/client"
+         - "DOCKER_TLS_VERIFY=1"
+       volumes:
+         - "jenkins-docker-certs:/certs/client:ro"
+         - "jenkins-data:/var/jenkins_home"
+       dns:
+         - "9.9.9.9"
+         - "1.1.1.1"
+       depends_on:
+         - "docker"
+   volumes:
+     jenkins-docker-certs: {}
+     jenkins-data: {}
+   ```
+
+6. Start the infrastructure
+
+   ```bash
+   podman compose up
+   ```
+
+7. Open Jenkins in your browser on http://localhost:8080
+8. Check the logs of command 6 and copy the admin password
+9. Enter the admin password in the UI
+10. Install the suggested plugins
+11. Create the admin user
+12. Leave the instance configuration as it is
+13. Click start using Jenkins
+
+By executing these commands you have successfully installed a local instance of
+Jenkins. Be aware that this is not a production ready setup and is only for
+testing purposes. The first `Containerfile` takes the Jenkins image as a
+starting point and makes the Docker CLI available. Command wise Docker is the
+same as Podman, and it depends on personal preference on what to use. In
+companies, you will require a License for Docker whereas Podman can be used for
+free. After that you created a `compose.yaml` file that defines which containers
+with what configuration should be started. You reference the `Containerfile` on
+one of the services and add configuration on both. They also share some volumes
+so that Jenkins is able to access Docker securely. We will cover the
+`compose.yaml` file in more details in a later lessen. With the 6 command you
+then tell Podman to start the services accordingly. In the end you go through
+the initial setup of Jenkins.
+
+#### Create the Pipeline
+
+1. Create a file named `Jenkinsfile` in the root of your directory
+2. Add the following content
+
+   ```Jenkinsfile
+   pipeline {
+        agent any
+        stages {
+            stage("Checkout") {
+                steps {
+                    checkout scm
+                }
+            }
+            stage("Install Verify Tools") {
+                steps {
+                    sh "curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v1.55.2"
+                }
+            }
+            stage("Verify") {
+                steps {
+                    sh "./bin/golangci-lint run"
+                    sh "go test ./..."
+                }
+            }
+            stage("Go Build") {
+                steps {
+                    sh "go build -o ./bin/gogreeter ."
+                }
+            }
+            stage("Container Build") {
+                steps {
+                    sh "docker build -t gogreeter -f Containerfile ."
+                }
+            }
+        }
+   }
+   ```
+
+This `Jenkinsfile` will at first clone the repository you will define in
+Jenkins. Then it will install `golangci-lint` in a folder named `bin`. In the
+verify stage it will then validate the code with `golangci-lint` and run the
+unit tests. After that it will build the code into an executable and in the end
+create a container image.
+
+#### Add your GitHub Credentials to Jenkins
+
+Optional: this is only required if your repository is not public.
+
+1. Open Jenkins in your browser on http://localhost:8080
+2. Login with your previously created user
+3. Click "Manage Jenkins" on the left side
+4. Click "Credentials" under "Security"
+5. Click on "System"
+6. Click on "Global credentials"
+7. Click "Add Credentials"
+8. Leave everything as it is and fill out "Username" and "Password"
+9. "ID" should be the value "github-credentials"
+
+This creates a secret that is accessible within your Pipeline. Usually it is not
+a good practice to store the credentials globally but as you use the instance
+just for yourself this will not be a problem.
+
+#### Add the Pipeline to Jenkins
+
+1. Open Jenkins in your browser on http://localhost:8080
+2. Login with your previously created user
+3. Click on "New Item"
+4. Enter "gogreeter" as name
+5. Choose "Multibranch Pipeline"
+6. Enter "gogreeter" as display name
+7. Click on "Add source" below "Branch Sources"
+8. Select "Git"
+9. Enter "https://github.com/USER/gogreeter.git" into project repository
+   (replace USER with your GitHub username)
+10. If your repository is private, choose the previously created
+    "github-credentials" under "Credentials"
+11. Click on "Save"
+
+This creates a new multibranch pipeline under the name "gogreeter" (a pipeline
+for each branch of your repository) that gets the Jenkins file from GitHub and
+starts the build for each branch.
+
+#### Check the Output of the Pipeline
+
+1. Open Jenkins in your browser on http://localhost:8080
+2. Login with your previously created user
+3. Click on "gogreeter"
+4. Click on "main"
+5. Click on "#1"
+6. Click on "Console Output"
+
+As you can see the verify stage is failing. Why did the verify stage fail?
+`golanci-lint` detected that a possible error that could be produced is not
+handled. In case this error would actually occur we would never know what
+happened.
+
+#### Fix the Code
+
+1. Open the `main.go` file
+2. Above line 4 add `"log"`
+3. Replace line 17 with the following
+
+   ```go
+   if err := app.Listen(ADDRESS); err != nil {
+   	log.Fatal("failed to listen on address", err)
+   }
+   ```
+
+4. Start another build and recheck the output of the pipeline
+
+## 7. Add Continuous Delivery
+
+To make your artifacts available to other people or the solution you use for
+hosting the application you will add continuous delivery. In one project you
+will use GitHub Container Registry in the other one you will use Nexus.
+
+### pygreeter
+
+For pygreeter you are going to use GHCR. You want GitHub Actions to only push
+the image if it is currently executing on main.
+
+#### Add Write Access to the Workflow
+
+1. Open [GitHub](https://github.com/) and login with your existing account
+2. Search for the "pygreeter" on the left side and click on it
+3. Click on "Settings"
+4. Click on "Actions"
+5. Click on "General"
+6. Click on "Read and write permissions" under "Workflow permissions"
+
+With these permissions the workflows are able to publish artifacts to the GHCR
+of the current repository.
+
+#### Extend the Workflow
+
+1. Open the `.github/workflows/ci-cd.yaml` file
+2. Rename the `build` job to `build-and-push`
+3. Add the `id` field to the last step with the value `build`
+4. Add the following steps to it
+
+   ```yaml
+   - uses: "redhat-actions/push-to-registry@v2"
+     if: "github.ref == 'refs/heads/main'"
+     env:
+       IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}"
+     with:
+       image: "${{ steps.build.outputs.image }}"
+       tags: "${{ steps.build.outputs.tags }}"
+       registry: "${{ env.IMAGE_REGISTRY }}"
+       username: "$"
+       password: "${{ secrets.GITHUB_TOKEN }}"
+   ```
+
+This step will use a publicly available action to push the artifact to GHCR. It
+does that with the outputs of the previous step, the registry environmental
+variable, user and token. The token is a built-in functionality from GitHub
+Actions.
+
+#### Login to the Registry
+
+Optional: this is only required if your repository is not public.
+
+1. Follow the instructions on how to create an access token
+   [here](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-personal-access-token-classic).
+   As scope use the values `read:packages`, `write:packages` and
+   `delete:packages`.
+2. Login to the registry (use your GitHub username as user and the previously
+   created access token as password)
+
+   ```bash
+   podman login ghcr.io
+   ```
+
+#### Pull and Test the Image
+
+1. Pull the image (replace USER with your GitHub username)
+
+   ```bash
+   podman pull ghcr.io/USER/pygreeter:latest
+   ```
+
+2. Run the image (replace USER with your GitHub username)
+
+   ```bash
+   podman run -p 8080:8080 ghcr.io/USER/pygreeter:latest
+   ```
+
+You have now successfully published the artifact
+
+### gogreeter
+
+For gogreeter you are going to use Nexus. You want Jenkins to only push
+the image if it is currently executing on main.
+
+#### Extend Infrastructure
+
+1. Open the `infra/compose.yaml` file
+2. Add the following command to the docker service
+
+   ```yaml
+   command:
+     - "--insecure-registry=nexus:8082"
+   ```
+
+3. Add the following service
+
+   ```yaml
+   nexus:
+     image: "sonatype/nexus3"
+     hostname: "nexus"
+     ports:
+       - "8081:8081"
+       - "8082:8082"
+     volumes:
+       - "nexus-data:/nexus-data"
+     dns:
+       - "9.9.9.9"
+       - "1.1.1.1"
+   ```
+
+4. Add the following volume
+
+   ```yaml
+   nexus-data: {}
+   ```
+
+5. Start the infrastructure
+
+   ```bash
+   podman-compose up
+   ```
+
+6. Open Nexus in your browser on http://localhost:8081
+7. Get the `admin` password
+
+   ```bash
+   podman exec infra_nexus_1 cat /nexus-data/admin.password
+   ```
+
+8. Click "Sign In"
+9. Use `admin` as username and the password you got from the previous command
+10. Click "Next"
+11. Choose your new password and "Next"
+12. Click "Disable anonymous access" and "Next"
+13. Click "Finish"
+
+By adding the service and volume and then following the instructions on setting
+up you have successfully installed Nexus.
+
+#### Create Repository
+
+1. Open Nexus in your browser on http://localhost:8081
+2. Login as `admin` with your previously changed password
+3. Click the settings wheel on the top
+4. Click "Repositories"
+5. Click "Create repository"
+6. Click "docker (hosted)"
+7. Enter "gogreeter" as name
+8. Enable the tick under "HTTP" and choose the port `8082`
+9. Click "Create repository"
+
+You have now successfully created a repository in Nexus that is able to store
+container images. It will be accessible on port `8082` and because it is a test
+environment not use any encryption, but you will see that later.
+
+#### Add Credentials to Jenkins
+
+1. Open Jenkins in your browser on http://localhost:8080
+2. Login with your previously created user
+3. Click "Manage Jenkins" on the left side
+4. Click "Credentials" under "Security"
+5. Click on "System"
+6. Click on "Global credentials"
+7. Click "Add Credentials"
+8. Leave everything as it is and fill out "Username" as `admin` and "Password"
+   with the one you have previously chosen
+9. "ID" should be the value "nexus-credentials"
+
+This creates a secret that is accessible within your Pipeline. Usually it is not
+a good practice to store the credentials globally but as you use the instance
+just for yourself this will not be a problem. It is also not a good practice to
+store admin credentials. Always use credentials that go with the principle of
+the least privilege meaning it can only do what it has to do. As it is a testing
+environment in this case we will leave it.
+
+#### Extend the Pipeline
+
+1. Open the `Jenkinsfile` file
+2. Replace line 27 with the following
+
+   ```Jenkinsfile
+   sh 'docker build -t nexus:8082/gogreeter:latest -t nexus:8082/gogreeter:$GIT_COMMIT -f Containerfile .'
+   ```
+
+3. Add the following stage
+
+   ```Jenkinsfile
+   stage("Container Push") {
+       when {
+           branch 'main'
+       }
+       environment {
+           NEXUS_CREDENTIALS = credentials("nexus-credentials")
+       }
+       steps {
+           sh 'echo $NEXUS_CREDENTIALS_PSW | docker login nexus:8082 -u $NEXUS_CREDENTIALS_USR --password-stdin'
+           sh "docker push nexus:8082/gogreeter:latest"
+           sh 'docker push nexus:8082/gogreeter:$GIT_COMMIT'
+       }
+   }
+   ```
+
+#### Login to the Registry
+
+1. Login to the registry (use `admin` as user and the previously
+   changed password)
+
+   ```bash
+   podman login localhost:8082 --tls-verify=false
+   ```
+
+The `tls-verify=false` flag is required as in our test environment the endpoint
+is not secured by TLS.
+
+#### Pull and Test the Image
+
+1. Pull the image
+
+   ```bash
+   podman pull localhost:8082/gogreeter:latest --tls-verify=false
+   ```
+
+2. Run the image
+
+   ```bash
+   podman run -p 8080:8080 localhost:8082/gogreeter:latest --tls-verify=false
+   ```
+
+You have now successfully published the artifact.
+
+## 8. Set Up Virtual Machines
+
+To get some knowledge on how to do different Sysadmin tasks you will set up two
+different VMs and then install your application within them. In both VMs you
+will use Linux but different distributions so that you get to see some common
+differences. You will be using Oracle VirtualBox a type II hypervisor. The focus
+of this is exercises is mainly to get more comfortable with some common tasks in
+the command line and see the differences between two Linux distributions.
+
+### pygreeter
+
+For pygreeter you will be using Ubuntu as the Linux distribution.
+
+#### Installing the ISO
+
+1. Install the Ubuntu Server 22.04 LTS ISO from
+   (https://ubuntu.com/download/server)
+
+An ISO file is an exact copy of an entire optical disk like CD or DVD. This
+file type commonly used to store an installer for operating systems on and can
+then be written to a USB stick or used within a hypervisor to do the
+installation of the operating system.
+
+#### Preparing the Virtual Machine
+
+1. Open Virtual Box
+2. Click "New"
+3. Choose "Ubuntu for pygreeter" as the name
+4. Choose a folder where you want to store files related to the VM
+5. Choose the previously downloaded ISO file as ISO image
+6. Choose "Linux" as type
+7. Choose "Ubuntu" as version
+8. Choose "Skip Unattended Installation"
+9. Click "Next"
+10. Give your VM around 2048 of memory (make sure it stays in the green area)
+11. Give your VM around 2 CPUs
+12. Click "Enable EFI"
+13. Click "Next"
+14. Choose "Create a Virtual Hard Disk Now"
+15. Choose 20GB
+16. Click "Next"
+17. Click "Finish"
+
+This will tell Virtual Box that you are going to create a Linux Virtual Machine
+with Ubuntu as distribution that uses 2 GB of memory, around 2 CPUs, 20 GB of
+storage and uses UEFI to boot the operating system. Virtual Box will then take
+care of the preparation.
+
+#### Installing the Operating System
+
+1. Click "Start"
+2. Choose "Try or Install Ubuntu Server"
+3. Choose "English" as language
+4. Choose "Update to new installer" and hit enter
+5. Choose "Identify keyboard" and hit enter
+6. Click "Done"
+7. Choose "Ubuntu Server (minimized)"
+8. Click "Done"
+9. Let it detect the interface
+10. Click "Done"
+11. Click "Done"
+12. Make sure the mirror passed the location test
+13. Click "Done"
+14. Click "Done"
+15. Click "Done"
+16. Click "Continue"
+17. Fill out your user details (name the server "ubuntu")
+18. Click "Done"
+19. Click "Done"
+20. Click "Done"
+21. Click "Done"
+22. Wait for the installation and updates to finish
+23. Click "Reboot now"
+
+You have now successfully installed a minimal version of Ubuntu server. It
+contains your user, your language, the right keyboard configuration and basic
+network access.
+
+#### Basic Configuration
+
+1. Login with the newly created user
+
+2. Install the required tools
+
+   ```bash
+   sudo apt-get install software-properties-common
+   sudo add-apt-repository ppa:deadsnakes/ppa
+   sudo apt-get update
+   sudo apt-get install git vim python3.12 python3.12-dev python3.12-venv
+   ```
+
+3. Add a user for pygreeter (do not enter any more information, then hit enter)
+
+   ```bash
+   sudo adduser pygreeter
+   ```
+
+4. Switch to the pygreeter user
+
+   ```bash
+   su pygreeter
+   ```
+
+At first, you added a new place your package manager is able to use to search for
+packages. In this case to look for newer versions of python. With the new
+repository you tell apt to update its indexes and then install git, a basic text
+editor and everything required for python. After that you created a user to run
+the application with the name `pygreeter`. In the end you switch into the user
+session of the newly created user.
+
+#### Install the Application
+
+1. Create a folder named `services` in the home directory of `pygreeter`
+
+   ```bash
+   cd
+   mkdir services
+   ```
+
+2. Switch into the `services` directory
+
+   ```bash
+   cd services
+   ```
+
+3. Clone the repository of `pygreeter` (replace USER with your GitHub username)
+
+   ```bash
+   git clone https://github.com/USER/pygreeter.git
+   ```
+
+4. Switch into the `pygreeter` directory
+
+   ```bash
+   cd pygreeter
+   ```
+
+5. Create a virtual environment
+
+   ```bash
+   python3.12 -m venv .venv
+   ```
+
+6. Activate the virtual environment
+
+   ```bash
+   source .venv/bin/activate
+   ```
+
+7. Install the requirements
+
+   ```bash
+   pip3.12 install -r requirements.txt
+   ```
+
+The freshly installed server now contains everything it needs to run pygreeter.
+
+#### Starting the Application as a Service
+
+1. Create a file named `pygreeter.service`
+
+2. Add the following content
+
+   ```
+   [Unit]
+   Description=Service of pygreeter
+   After=multi-user.target
+
+   [Service]
+   Type=simple
+   ExecStart=/home/pygreeter/services/pygreeter/.venv/bin/python /home/pygreeter/services/pygreeter/main.py
+   User=pygreeter
+
+   [Install]
+   WantedBy=multi-user.target
+   ```
+
+3. Exit the user session of pygreeter
+
+   ```bash
+   exit
+   ```
+
+4. Copy the `pygreeter.service` file to `/usr/lib/systemd/system`
+
+   ```bash
+   sudo cp /home/pygreeter/services/pygreeter/pygreeter.service /usr/lib/systemd/system
+   ```
+
+5. Reload the systemd daemon
+
+   ```bash
+   sudo systemctl daemon-reload
+   ```
+
+6. Enable the pygreeter service
+
+   ```bash
+   sudo systemctl enable --now pygreeter.service
+   ```
+
+This will start your application as a service. This means that the application
+will be running after reboots as well. The `pygreeter.service` file you defined
+tells your service configuration program how and when to run the service as well
+as which user to run it as.
+
+#### Test the Application
+
+1. Make an HTTP request to the application
+
+   ```bash
+   curl localhost:8080
+   ```
+
+#### Additional Exercise
+
+Try to figure out how you could access the now started service from within your
+host operating system.
+
+### gogreeter
+
+For gogreeter you will be using Rocky as the Linux distribution.
+
+#### Installing the ISO
+
+1. Install the Rocky 9 Linux ISO from (https://rockylinux.org/download/)
+
+An ISO file is an exact copy of an entire optical disk like CD or DVD. This
+file type commonly used to store an installer for operating systems on and can
+then be written to a USB stick or used within a hypervisor to do the
+installation of the operating system.
+
+#### Preparing the Virtual Machine
+
+1. Open Virtual Box
+2. Click "New"
+3. Choose "Rocky for gogreeter" as the name
+4. Choose a folder where you want to store files related to the VM
+5. Choose the previously downloaded ISO file as ISO image
+6. Choose "Linux" as type
+7. Choose "Redhat" as version
+8. Choose "Skip Unattended Installation"
+9. Click "Next"
+10. Give your VM around 2048 of memory (make sure it stays in the green area)
+11. Give your VM around 2 CPUs
+12. Click "Enable EFI"
+13. Click "Next"
+14. Choose "Create a Virtual Hard Disk Now"
+15. Choose 20GB
+16. Click "Next"
+17. Click "Finish"
+
+This will tell Virtual Box that you are going to create a Linux Virtual Machine
+with Rocky as distribution that uses 2 GB of memory, around 2 CPUs, 20 GB of
+storage and uses UEFI to boot the operating system. Virtual Box will then take
+care of the preparation.
+
+#### Installing the Operating System
+
+1. Choose "Install Rocky Linux 9.3"
+2. Choose "English"
+3. Click "Continue"
+4. Make sure that everything that does not have a exclamation mark has the right
+   value for your setup.
+5. Click "Instalation Destination"
+6. Click "Done"
+7. Click "Root Password"
+8. Select a password and confirm it
+9. Click "Lock root account"
+10. Click "Done"
+11. Click "User Creation"
+12. Fill out the missing values
+13. Click "Make this user administrator"
+14. Click "Done"
+15. Click "Begin Installation"
+16. Click "Reboot System"
+
+You have now successfully installed a minimal version of Rocky 9. It contains
+your user, your language, the right keyboard configuration and basic network
+access.
+
+#### Basic Configuration
+
+1. Login with the newly created user
+
+2. Install the required tools
+
+   ```bash
+   sudo dnf install git vim golang
+   ```
+
+3. Add a user for gogreeter
+
+   ```bash
+   sudo useradd gogreeter
+   sudo passwd gogreeter
+   ```
+
+4. Switch to the pygreeter user
+
+   ```bash
+   su gogreeter
+   ```
+
+At first, you install git, a basic text editor and the go programming language.
+After that you created a user to run the application with the name `gogreeter`
+and changed its password. In the end you switch into the user session of the
+newly created user.
+
+#### Installing the Application
+
+1. Create a folder named `services` in the home directory of `gogreeter`
+
+   ```bash
+   cd
+   mkdir services
+   ```
+
+2. Switch into the `services` directory
+
+   ```bash
+   cd services
+   ```
+
+3. Clone the repository of `gogreeter` (replace USER with your GitHub username)
+
+   ```bash
+   git clone https://github.com/USER/gogreeter.git
+   ```
+
+4. Switch into the `gogreeter` directory
+
+   ```bash
+   cd gogreeter
+   ```
+
+5. Build the `gogreeter` executable
+
+   ```bash
+   go build -o ./bin/gogreeter .
+   ```
+
+The freshly installed server now contains everything it needs to run gogreeter.
+
+#### Starting the Application as a Service
+
+1. Move the newly created binary to `/usr/local/bin`
+
+   ```bash
+   sudo cp /home/gogreeter/services/gogreeter/bin/gogreeter /usr/local/bin
+   ```
+
+2. Create a file named `gogreeter.service`
+
+3. Add the following content
+
+   ```
+   [Unit]
+   Description=Service of gogreeter
+   After=multi-user.target
+
+   [Service]
+   Type=simple
+   ExecStart=/usr/local/bin/gogreeter
+   User=gogreeter
+
+   [Install]
+   WantedBy=multi-user.target
+   ```
+
+4. Exit the user session of gogreeter
+
+   ```bash
+   exit
+   ```
+
+5. Copy the `gogreeter.service` file to `/usr/lib/systemd/system`
+
+   ```bash
+   sudo cp /home/gogreeter/services/gogreeter/gogreeter.service /usr/lib/systemd/system
+   ```
+
+6. Reload the systemd daemon
+
+   ```bash
+   sudo systemctl daemon-reload
+   ```
+
+7. Enable the gogreeter service
+
+   ```bash
+   sudo systemctl enable --now gogreeter.service
+   ```
+
+This will start your application as a service. This means that the application
+will be running after reboots as well. The `gogreeter.service` file you defined
+tells your service configuration program how and when to run the service as well
+as which user to run it as. You had to move the executable to a `/usr/local/bin`
+because Rocky Linux comes with a tool called SELinux (a security hardening tool)
+that disallows running personal user binaries as services.
+
+#### Test the Application
+
+1. Make an HTTP request to the application
+
+   ```bash
+   curl localhost:8080
+   ```
+
+#### Additional Exercise
+
+Try to figure out how you could access the now started service from within your
+host operating system.
+
+## 9. Extend the Containerfiles
+
+Now what you know more about container and how they can be orchestrated you will
+extend the two Containerfiles that you have already created with some
+documenting instructions. This time you will actually know what is going on when
+you execute the commands. Because you already have the infrastructure for CI/CD
+you will just able to add the new instructions and can then push it from the
+registry.
+
+### pygreeter
+
+#### Extend the Containerfile
+
+1. Open the `Containerfile` file
+2. Add the following instructions to the end of the file
+
+```Dockerfile
+EXPOSE 8080
+```
+
+Someone using you Containerfile will now know that they need to forward the port
+8080 in case they want to access the image.
+
+Additional exercise: write down what each of the instructions within the
+Containerfile does and think about a way to improve the layers or if they are
+already fine like that.
+
+#### Fetch
+
+1. Optional: login to the registry in case it is private
+
+   ```bash
+   podman login ghcr.io
+   ```
+
+2. Fetch the newly created image (replace USER with your GitHub username)
+
+   ```bash
+   podman pull ghcr.io/USER/pygreeter:latest
+   ```
+
+The new change to the container image should now be present on your local
+system. To make sure inspect the container.
+
+3. Inspect the container
+
+   ```bash
+   podman inspect ghcr.io/USER/pygreeter:latest
+   ```
+
+Checkout the last layer, it should have the EXPOSE instruction.
+
+#### Play with the Container
+
+1. Run the container in detached mode and forward to a free port (replace USER
+   with your GitHub username)
+
+   ```bash
+   podman run -d -p 8085:8080 ghcr.io/USER/pygreeter
+   ```
+
+2. Perform an HTTP request within the container and store the response in a file
+
+   ```bash
+   podman exec <id-or-name-of-previous-command> 'curl http://localhost:8080 -o response.txt'
+   ```
+
+3. Copy the file onto your machine
+
+   ```bash
+   podman cp <id-or-name-of-previous-command>:/code/response.txt response.txt
+   ```
+
+4. Check out the response
+
+   ```bash
+   cat response.txt
+   ```
+
+5. Stop the container
+
+   ```
+   podman stop <id-or-name-of-previous-command>
+   ```
+
+### gogreeter
+
+#### Extend the Containerfile
+
+1. Open the `Containerfile` file
+2. Add the following instructions to the end of the file
+
+```Dockerfile
+EXPOSE 8080
+```
+
+Someone using you Containerfile will now know that they need to forward the port
+8080 in case they want to access the image.
+
+Additional exercise: write down what each of the instructions within the
+Containerfile does and think about a way to improve the layers or if they are
+already fine like that.
+
+#### Fetch
+
+1. Login to the registry as it is private
+
+   ```bash
+   podman login localhost:8082
+   ```
+
+2. Fetch the newly created image
+
+   ```bash
+   podman pull localhost:8082/gogreeter:latest
+   ```
+
+The new change to the container image should now be present on your local
+system. To make sure inspect the container.
+
+3. Inspect the container
+
+   ```bash
+   podman inspect localhost:8082/gogreeter:latest
+   ```
+
+Checkout the last layer, it should have the EXPOSE instruction.
+
+#### Play with the Container
+
+1. Run the container in detached mode and forward to a free port (replace USER
+   with your GitHub username)
+
+   ```bash
+   podman run -d -p 8085:8080 localhost:8082/gogreeter
+   ```
+
+2. Perform an HTTP request within the container and store the response in a file
+
+   ```bash
+   podman exec <id-or-name-of-previous-command> 'curl http://localhost:8080 -o response.txt'
+   ```
+
+3. Copy the file onto your machine
+
+   ```bash
+   podman cp <id-or-name-of-previous-command>:/code/response.txt response.txt
+   ```
+
+4. Check out the response
+
+   ```bash
+   cat response.txt
+   ```
+
+5. Stop the container
+
+   ```
+   podman stop <id-or-name-of-previous-command>
+   ```
+
+## 10. Deploy Applications with Kubernetes
+
+In this exercise you are going to the deploy the existing containers of your
+application within a local Kubernetes cluster. Be aware that I changed one of
+the tools you need to install. Instead of `kind` we are going to use `k3s` as it
+does not depend on either Podman or Docker. As soon as you have `k3s` installed
+your `kubectl` should be configured accordingly.
+
+1. Check if you can access the empty local cluster
+
+   ```bash
+   kubectl get all
+   ```
+
+You will create the `Deployment` resource for both of your applications. You
+will then create a service to make the applications accessible from within the
+cluster. You will then access the applications from a pod within the cluster and
+scale the application up and down.
+
+### pygreeter
+
+#### Create a Deployment
+
+1. Create a folder named `k8s`
+2. Create a file named `deployment.yaml` within this folder
+3. Add the following content (replace USER with your GitHub username)
+
+   ```yaml
+   apiVersion: apps/v1
+   kind: Deployment
+   metadata:
+     labels:
+       app: pygreeter
+     name: pygreeter
+   spec:
+     replicas: 1
+     selector:
+       matchLabels:
+         app: pygreeter
+     template:
+       metadata:
+         labels:
+           app: pygreeter
+       spec:
+         containers:
+           - image: ghcr.io/USER/pygreeter
+             name: pygreeter
+             ports:
+               - containerPort: 8080
+   ```
+
+This file is defines what Kubernetes should create. In this example a
+deployment. A deployment creates replica sets with your pod configuration
+for you and provides some additional functionality for scaling and rollbacks
+that you will learn later.
+
+4. Optional: in case that your repository is private you will have to first add
+   an image pull secret and add it to the definition (replace USER, TOKEN and
+   EMAIL with your corresponding values. The TOKEN is the one you have already
+   created for GitHub)
+
+   ```bash
+   kubectl create secret docker-registry ghcr-secret --docker-server=https://ghcr.io --docker-username=USER --docker-password=TOKEN --docker-email=EMAIL
+   ```
+
+   Add the image pull secret under `.spec.template.spec.imagePullSecrets`
+
+   ```yaml
+   imagePullSecrets:
+     - name: ghcr-secret
+   ```
+
+5. Add the deployment to the cluster
+
+   ```bash
+   kubectl apply -f deployment.yaml
+   ```
+
+   Instead of defining your deployments in YAML you could also execute the
+   following command (replace USER with your GitHub username).
+
+   ```
+   kubectl create deployment --image ghcr.io/USER/pygreeter --port 8080 pygreeter
+   ```
+
+   But in case you required an image pull secret that will not be possible from
+   the command line.
+
+6. Check if the application is running
+
+   ```bash
+   kubectl get deployment
+   kubectl get replicaset
+   kubectl get pod
+   ```
+
+7. Checkout the logs of the pod
+
+   ```bash
+   kubectl logs pods/<pod-id-from-previous-command>
+   ```
+
+8. Scale the deployment
+
+   ```bash
+   kubectl scale --replicas=3 deployment pygreeter
+   ```
+
+9. Check the new pods that are starting
+
+   ```bash
+   kubectl get pod
+   ```
+
+10. Change the image of the deployment to something that does not exist
+
+    ```bash
+    kubectl edit deployment pygreeter
+    ```
+
+11. Check that the new pod is not able to start
+
+    ```bash
+    kubectl get pod
+    ```
+
+12. Checkout all revisions of the deployment
+
+    ```bash
+    kubectl rollout history deployment pygreeter
+    ```
+
+13. Rollback to the previous revision
+
+    ```bash
+    kubectl rollout undo deployment pygreeter
+    ```
+
+You have now successful deployed pygreeter within Kubernetes and checked out
+some common commands related to deployments. Let's check out how you can expose
+the deployment within the cluster.
+
+#### Create a Service
+
+1. Create a file named `service.yaml`
+2. Add the following content
+
+   ```yaml
+   apiVersion: v1
+   kind: Service
+   metadata:
+     labels:
+       app: pygreeter
+     name: pygreeter
+   spec:
+     ports:
+       - port: 8080
+         protocol: TCP
+         targetPort: 8080
+     selector:
+       app: pygreeter
+   ```
+
+3. Add the service to the cluster
+
+   ```bash
+   kubectl apply -f service.yaml
+   ```
+
+   Instead of defining your services in YAML you could also execute the
+   following command. In case you need more advanced service configuration this
+   will not be possible.
+
+   ```bash
+   kubectl expose deployment/pygreeter
+   ```
+
+4. Access the application
+
+   ```
+   kubectl run --rm -it --image alpine -- sh
+   wget 'http://pygreeter:8080' -O response.txt
+   cat response.txt
+   exit
+   ```
+
+   This start a container within the cluster and starts and interactive shell.
+   Within this shell you can then use `wget` to make an HTTP call to the pygreeter
+   service and write it to the file `response.txt`. In the end you can exit the
+   container, and it will be removed from the cluster.
+
+You have now successfully exposed your application within the cluster. You also
+learned how to quickly spawn a container in a cluster to test some things.
+
+### gogreeter
+
+#### Import the Image
+
+As k3s will not be able to access your local registry you will have to import
+the container image of gogreeter manually.
+
+1. Import the image
+
+   ```bash
+   podman save localhost:8082/gogreeter:latest | k3s ctr images import -
+   ```
+
+This will create an archive of the image and import it into the container
+runtime of k3s.
+
+#### Create a Deployment
+
+1. Create a folder named `k8s`
+2. Create a file named `deployment.yaml` within this folder
+3. Add the following content
+
+   ```yaml
+   apiVersion: apps/v1
+   kind: Deployment
+   metadata:
+     labels:
+       app: gogreeter
+     name: gogreeter
+   spec:
+     replicas: 1
+     selector:
+       matchLabels:
+         app: gogreeter
+     template:
+       metadata:
+         labels:
+           app: gogreeter
+       spec:
+         containers:
+           - image: localhost:8082/gogreeter:latest
+             imagePullPolicy: Never
+             name: gogreeter
+             ports:
+               - containerPort: 8080
+   ```
+
+This file is defines what Kubernetes should create. In this example a
+deployment. A deployment creates replica sets with your pod configuration
+for you and provides some additional functionality for scaling and rollbacks
+that you will learn later. This pod configuration also has a flag to never pull
+the gogreeter container image from a registry as we have already imported it.
+
+4. Add the deployment to the cluster
+
+   ```bash
+   kubectl apply -f deployment.yaml
+   ```
+
+   Instead of defining your deployments in YAML you could also execute the
+   following command (replace USER with your GitHub username).
+
+   ```
+   kubectl create deployment --image localhost:8082/gogreeter:latest --port 8080 gogreeter
+   ```
+
+   But in case you required an image pull policy that will not be possible from
+   the command line.
+
+5. Check if the application is running
+
+   ```bash
+   kubectl get deployment
+   kubectl get replicaset
+   kubectl get pod
+   ```
+
+6. Checkout the logs of the pod
+
+   ```bash
+   kubectl logs pods/<pod-id-from-previous-command>
+   ```
+
+7. Scale the deployment
+
+   ```bash
+   kubectl scale --replicas=3 deployment gogreeter
+   ```
+
+8. Check the new pods that are starting
+
+   ```bash
+   kubectl get pod
+   ```
+
+9. Change the image of the deployment to something that does not exist
+
+   ```bash
+   kubectl edit deployment gogreeter
+   ```
+
+10. Check that the new pod is not able to start
+
+    ```bash
+    kubectl get pod
+    ```
+
+11. Checkout all revisions of the deployment
+
+    ```bash
+    kubectl rollout history deployment gogreeter
+    ```
+
+12. Rollback to the previous revision
+
+    ```bash
+    kubectl rollout undo deployment gogreeter
+    ```
+
+You have now successful deployed gogreeter within Kubernetes and checked out
+some common commands related to deployments. Let's check out how you can expose
+the deployment within the cluster.
+
+#### Create a Service
+
+1. Create a file named `service.yaml`
+2. Add the following content
+
+   ```yaml
+   apiVersion: v1
+   kind: Service
+   metadata:
+     labels:
+       app: gogreeter
+     name: gogreeter
+   spec:
+     ports:
+       - port: 8080
+         protocol: TCP
+         targetPort: 8080
+     selector:
+       app: gogreeter
+   ```
+
+3. Add the service to the cluster
+
+   ```bash
+   kubectl apply -f service.yaml
+   ```
+
+   Instead of defining your services in YAML you could also execute the
+   following command. In case you need more advanced service configuration this
+   will not be possible.
+
+   ```bash
+   kubectl expose deployment/gogreeter
+   ```
+
+4. Access the application
+
+   ```
+   kubectl run --rm -it --image alpine -- sh
+   wget 'http://gogreeter:8080' -O response.txt
+   cat response.txt
+   exit
+   ```
+
+   This start a container within the cluster and starts and interactive shell.
+   Within this shell you can then use `wget` to make an HTTP call to the pygreeter
+   service and write it to the file `response.txt`. In the end you can exit the
+   container, and it will be removed from the cluster.
+
+You have now successfully exposed your application within the cluster. You also
+learned how to quickly spawn a container in a cluster to test some things.
