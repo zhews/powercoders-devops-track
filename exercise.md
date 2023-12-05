@@ -1,5 +1,12 @@
 # Exercise
 
+1. [Preparing your device](#1-preparing-your-device) 
+2. [Create github project](#2-create-github-project)
+3. [Create repositories](#3-create-repositories)
+4. [Create the applications](#4-create-the-applications)
+5. [Testing the applications](#5-testing-the-applications)
+6. [Add continuous integration](#6-add-continuous-integration)
+
 ## 1. Preparing your Device
 
 The following tools are used in this exercise:
