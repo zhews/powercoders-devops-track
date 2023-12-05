@@ -6,6 +6,7 @@
 4. [Create the applications](#4-create-the-applications)
 5. [Testing the applications](#5-testing-the-applications)
 6. [Add continuous integration](#6-add-continuous-integration)
+7. [Add continuous delivery](#7-add-continuous-delivery)
 
 ## 1. Preparing your Device
 
