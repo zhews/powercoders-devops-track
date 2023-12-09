@@ -1196,7 +1196,7 @@ You have now successfully published the artifact.
 
 ## 8. Set Up Virtual Machines
 
-To get some knowledge on how to do different Sysadmin tasks you will set up two
+To get some knowledge on how to do different Sysadmin tasks you will setup two
 different VMs and then install your application within them. In both VMs you
 will use Linux but different distributions so that you get to see some common
 differences. You will be using Oracle VirtualBox a type II hypervisor. The focus
@@ -2137,3 +2137,1206 @@ the deployment within the cluster.
 
 You have now successfully exposed your application within the cluster. You also
 learned how to quickly spawn a container in a cluster to test some things.
+
+## 11. Migrate to AWS Lambda
+
+One service AWS is known for is Lambda. Lambda is a compute service that lets
+you define functions that are executed based on different events. One event
+could be an HTTP request. Lambda is really cheap and only billed based on the
+time the functions are executing, but there is a free tier that covers a lot of
+function executions. These functions can be written in many different
+programming languages in your case both Python and Go are supported. In this
+exercise you will migrate your greet function in both py- and gogreeter to AWS
+Lambda and make them execute through an HTTP request. For now, you will do this
+via ClickOps or in other words within the management console of AWS. In the next
+exercise you will work with another cloud provider provisioning and configuring
+your infrastructure as code.
+
+For you to do this exercise you will first have to create an AWS account. This
+will require a credit card that you will have to add to the account. This
+exercise will stay in the free tier as long as you follow it precisely and do
+not create any other resources.
+
+To create the account follow the instructions of AWS
+[here](https://docs.aws.amazon.com/accounts/latest/reference/manage-acct-creating.html).
+
+In this exercise we are going to perform the actions under the accounts root
+user. In any other work environment this is HIGHLY not recommended.
+
+### pygreeter
+
+1. Open the AWS Console [here](https://console.aws.amazon.com)
+2. Log in with your newly created user
+3. Select "Europe (Frankfurt)" next to your account name
+4. Search for Lambda in the upper search bar
+5. In the left menu select "Functions"
+6. Click "Create Function"
+7. Select "Author from scratch"
+8. As a function name choose "pygreeter"
+9. As runtime choose "Python 3.11"
+10. Click "Advanced settings"
+11. Select "Enable function URL"
+12. Select "None" under "Auth type"
+13. Click "Create function"
+14. Under the "Code" section change the content of the file `lambda_function.py`
+
+    ```python
+    import json
+
+
+    def greet(name: str) -> str:
+        cleaned_name = name.strip()
+        if len(cleaned_name) == 0:
+            return "Hello World!"
+        return f"Hello {name}!"
+
+
+    def lambda_handler(event, context) -> dict:
+        query_params = event.get("queryStringParameters", {})
+        name = query_params.get("name", "")
+        output = greet(name)
+        return {
+            "statusCode": 200,
+            "body": json.dumps(output),
+        }
+    ```
+
+15. Click on "Deploy"
+16. Copy the "Function URL" under the "Function Overview"
+17. Access the function under the just copied URL
+
+You have now deployed your first AWS Lambda function. The function will be
+visible under "pygreeter" in the Lambda section of the AWS Console. You decided
+to create the code for the function within the browser and to use python 3.11.
+Code wise nothing related to your business logic changed. You just had to change
+the way you get the input. In this case AWS Lambda provides the event that
+caused the execution into the function. From there you are able to get the query
+parameters and fallback to default values in case they are not there. With the
+advanced settings section you made your function accessible over the internet to
+anyone. This works because AWS in the back creates a role that allows everyone
+to access it. Under the URL you copied you will then be able to use the
+application the way you are used too locally.
+
+### gogreeter
+
+1. Open the AWS Console [here](https://console.aws.amazon.com)
+2. Log in with your newly created user
+3. Select "Europe (Frankfurt)" next to your account name
+4. Search for Lambda in the upper search bar
+5. In the left menu select "Functions"
+6. Click "Create Function"
+7. Select "Author from scratch"
+8. As a function name choose "gogreeter"
+9. As runtime choose "Go 1.x"
+10. Click "Advanced settings"
+11. Select "Enable function URL"
+12. Select "None" under "Auth type"
+13. Click "Create function"
+14. Switch into your gogreeter folder
+15. Create a new folder named `cmd` with the subfolders `gogreeter` and
+    `gogreeter-lambda`
+16. Move `main.go` into `cmd/gogreeter`
+17. Change line 5 to the following content
+
+    ```Dockerfile
+    COPY cmd/gogreeter /code/cmd/gogreeter
+    ```
+
+18. Change line 7 to the following instruction
+
+    ```Dockerfile
+    RUN CGO_ENABLED=0 go build -v -o /code/bin/gogreeter ./cmd/gogreeter
+    ```
+
+19. Install new dependencies for lambda
+
+    ```bash
+    go get github.com/aws/aws-lambda-go/lambda
+    go get github.com/aws/aws-lambda-go/events
+    ```
+
+20. Within `cmd/gogreeter-lambda` create a file named `main.go`
+21. Add the following code to the newly created file (replace USER with your
+    GitHub username)
+
+    ```go
+    package main
+
+    import (
+        "context"
+        "encoding/json"
+        "fmt"
+
+        "github.com/aws/aws-lambda-go/events"
+        "github.com/aws/aws-lambda-go/lambda"
+        "github.com/USER/gogreeter/greeter"
+    )
+
+    func HandleRequest(ctx context.Context, event events.APIGatewayV2HTTPRequest) ([]byte, error) {
+        name := event.QueryStringParameters["name"]
+        greeting := greeter.Greet(name)
+        output, err := json.Marshal(greeting)
+        if err != nil {
+            return nil, fmt.Errorf("could not marshal greeting %w", err)
+        }
+        return output, nil
+    }
+
+    func main() {
+        lambda.Start(HandleRequest)
+    }
+    ```
+
+22. Create the executable of the lambda handler
+
+    ```bash
+    GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build ./cmd/gogreeter-lambda -o main
+    ```
+
+23. Create a zip file containing the executable
+
+    ```bash
+    zip function.zip main
+    ```
+
+24. Under "Runtime settings" click "Edit"
+25. Under "Handler" enter "main"
+26. Click "Save"
+27. Under "Code source" click "Upload from .zip file" and upload the newly
+    created function
+28. Copy the "Function URL" under the "Function Overview"
+29. Access the function under the just copied URL
+
+You have now deployed your second AWS Lambda function. The function will be
+visible under "gogreeter" in the Lambda section of the AWS Console. With Go you
+are not able to change the code within the browser. That is why you added a
+second entry point within your gogreeter repository that used the Lambda SDK. To
+then add the code to the Lambda function you had to compile the new entrypoint
+into an executable and store it within a ZIP file. The ZIP file could then be
+uploaded to Lambda. Code wise nothing related to your business logic changed.
+You just had to change the way you get the input. In this case AWS Lambda
+provides the event that caused the execution into the function. From there you
+are able to get the query parameters and fallback to default values in case they
+are not there. With the advanced settings section you made your function
+accessible over the internet to anyone. This works because AWS in the back
+creates a role that allows everyone to access it. Under the URL you copied you
+will then be able to use the application the way you are used too locally.
+
+### Clean Up
+
+As long as your Lambda function will not go over a specific amount of requests
+they will not create any costs. To still prevent the chance of this happening we
+are now going to clean up the account.
+
+1. Open the AWS Console [here](https://console.aws.amazon.com)
+2. Log in with your newly created user
+3. Select "Europe (Frankfurt)" next to your account name
+4. Search for Lambda in the upper search bar
+5. In the left menu select "Functions"
+6. Select both functions
+7. Under "Actions" click "Delete"
+8. Type "delete" and click "Confirm"
+9. Click "Close"
+10. Search for IAM in the upper search bar
+11. Click "Policies" under "Access Management"
+12. Search for "AWSLambdaBasicExecutionRole" under "Policies"
+13. For each result click onto the "+"
+14. If it contains either py- or gogreeter click "Delete" under "Actions"
+
+The account should now be back to the original state. You can use it to checkout
+the [free tiers](https://aws.amazon.com/free/?all-free-tier.sort-by=item.additionalFields.SortRank&all-free-tier.sort-order=asc&awsf.Free%20Tier%20Types=*all&awsf.Free%20Tier%20Categories=*all)
+of other services or if you do not need it anymore delete it with [the following](https://docs.aws.amazon.com/accounts/latest/reference/manage-acct-closing.html)
+instructions. If you continue using the account please add [MFA authentication](https://docs.aws.amazon.com/IAM/latest/UserGuide/enable-virt-mfa-for-root.html)
+and create an [IAM user](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_users_create.html)
+immediately.
+
+## 12. Deploy to Exoscale with IaC
+
+In this exercise you are going to deploy your applications in virtual machines
+behind a load balancer with the help of OpenTofu and Ansible on Exoscale.
+Exoscale was really nice to provide you with 50.- of credits on their platform.
+Follow the instructions within Slack to receive the credits. You are then able
+to use this account for the following exercise and the remaining credits for
+whatever you would like to try out on Exoscale. There is just one rule, **do not
+create more than one SKS cluster**. As soon as you have an account we will have
+to create an API key for OpenTofu to create the resources.
+
+1. Open the portal of Exoscale [here](https://portal.exoscale.com)
+2. Click on "IAM" on the left side
+3. Click on "Roles" in the sub menu
+4. Click "Add"
+5. As a name use "SysAdmin"
+6. Click "Create"
+7. Click on "Keys" in the sub menu
+8. As name use "OpenTofu"
+9. Select the previously created "SysAdmin" role
+10. Click "Create"
+11. Write down your key and secret in a secure place (you will not be able to
+    see the secret again after leaving the page)
+
+### Creating a OpenTofu Module for the Infrastructure
+
+1. Create a new folder named `greeting-infrastructure`
+2. Create a file named `configuration.tf`
+3. Add the following content
+
+   ```tf
+   terraform {
+     required_providers {
+       exoscale = {
+         source = "exoscale/exoscale"
+         version = "0.54.1"
+       }
+     }
+   }
+   ```
+
+4. Initialize OpenTofu
+
+   ```bash
+   tofu init
+   ```
+
+5. Within this folder create a folder named `instance-pool-behind-loadbalancer`
+6. Create a file named `variables.tf` within the new folder
+7. Add the following content within the `variables.tf` file to define variables.
+   The first contains the name to use as a prefix for the resources, the second
+   one contains the zone to use within the module, the third contains the ssh
+   public key that should be installed on the instances, the fourth contains
+   ports that should be allowed on the security group, the sixth contains the
+   amount of instances to create, the fifth contains the type of instance to
+   create and the final one the amount of disk space to provision for each
+   instance.
+
+   ```tf
+   variable "name" {
+     type = string
+   }
+
+   variable "zone" {
+     type    = string
+     default = "ch-dk-2"
+   }
+
+   variable "ssh_public_key" {
+     type = string
+   }
+
+   variable "security_group_allowed_ports" {
+     type    = set(string)
+     default = ["22", "80"]
+   }
+
+   variable "instance_count" {
+     type    = number
+     default = 2
+   }
+
+   variable "instance_type" {
+     type    = string
+     default = "standard.tiny"
+   }
+
+   variable "instance_disk_size" {
+     type    = number
+     default = 10
+   }
+   ```
+
+8. Create an SSH Key to access the virtual machines
+
+   ```bash
+   ssh-keygen
+   ```
+
+   Store the key under the name `id_exoscale` in the `.ssh` folder within your
+   home directory.
+
+9. Create a file named `main.tf` within the new folder
+10. Add the following content to create the `exoscale_ssh_key` resource
+
+    ```tf
+    resource "exoscale_ssh_key" "instance_ssh_key" {
+      name       = "${var.name}-instance-ssh-key"
+      public_key = var.ssh_public_key
+    }
+    ```
+
+11. Create a `exoscale_security_group` resource that will manage the access to
+    the instances within the `main.tf` file.
+
+    ```tf
+    resource "exoscale_security_group" "greeters_security_group" {
+      name = "${var.name}-greeters-security-group"
+    }
+    ```
+
+12. Create two `exoscale_security_group` resources that will configure the
+    security group to allow traffic on specific ports.
+
+    ```tf
+    resource "exoscale_security_group_rule" "greeters_security_group_rule" {
+      security_group_id = exoscale_security_group.greeters_security_group.id
+      for_each          = var.security_group_allowed_ports
+      type              = "INGRESS"
+      protocol          = "TCP"
+      cidr              = "0.0.0.0/0"
+      start_port        = tonumber(each.key)
+      end_port          = tonumber(each.key)
+    }
+    ```
+
+13. Create a `exoscale_template` data source to access one of the default
+    instance templates within the `main.tf` file. The template can then be used
+    to create instances.
+
+    ```tf
+    data "exoscale_template" "ubuntu" {
+      name = "Linux Ubuntu 22.04 LTS 64-bit"
+      zone = var.zone
+    }
+    ```
+
+14. Create a `exoscale_instance_pool` resource that will create a specific
+    amount of instances within the `main.tf` file.
+
+    ```tf
+    resource "exoscale_instance_pool" "greeters" {
+      name = "${var.name}-greeters"
+      zone = var.zone
+
+      template_id        = data.exoscale_template.ubuntu.id
+      instance_type      = var.instance_type
+      disk_size          = var.instance_disk_size
+      size               = var.instance_count
+      key_pair           = exoscale_ssh_key.instance_ssh_key.name
+      security_group_ids = [exoscale_security_group.greeters_security_group.id]
+    }
+    ```
+
+15. Create a `exoscale_nlb` resource that will create a network load balancer
+    within the `main.tf` file.
+
+    ```tf
+    resource "exoscale_nlb" "greeters_nlb" {
+      name = "${var.name}-greeters-nlb"
+      zone = var.zone
+    }
+    ```
+
+16. Create a `exoscale_nlb_service` resource that will configure the network
+    load balancer to actually split the traffic across your instances within
+    the `main.tf` file.
+
+    ```tf
+    resource "exoscale_nlb_service" "greeters_nlb_service" {
+      name   = "${var.name}-greeters-nlb-service"
+      zone   = exoscale_nlb.greeters_nlb.zone
+      nlb_id = exoscale_nlb.greeters_nlb.id
+
+      instance_pool_id = exoscale_instance_pool.greeters.id
+      port             = 8080
+      target_port      = 8080
+
+      healthcheck {
+        port = 8080
+        mode = "http"
+        uri  = "/"
+      }
+    }
+    ```
+
+17. Create a file named `outputs.tf`
+18. Add the following outputs within the `outputs.tf` file.
+
+    ```tf
+    output "nlb_ip_address" {
+        value = exoscale_nlb.greeters_nlb.ip_address
+    }
+
+    output "instance_ip_addresses" {
+        value = exoscale_instance_pool.greeters.instances[*].public_ip_address
+    }
+    ```
+
+19. Create a file named `main.tf` in the upper folder
+20. Create a file named `variables.tf` in the upper folder
+21. Add the following variable to the newly created `variables.tf` file
+
+    ```tf
+    variable "ssh_public_key" {
+      type = string
+    }
+    ```
+
+22. Create a file named `outputs.tf` in the upper folder
+
+### pygreeter
+
+1. Add the newly created module within the `main.tf` file and pass the name
+   `pygreeter` and the variable `ssh_public_key` to it.
+
+   ```tf
+   module "gogreeter" {
+     source         = "./instance-pool-behind-loadbalancer"
+     name           = "gogreeter"
+     ssh_public_key = var.ssh_public_key
+   }
+   ```
+
+2. Create two outputs within the `outputs.tf` file.
+
+   ```tf
+   output "pygreeter_nlb_ip_address" {
+       value = module.pygreeter.nlb_ip_address
+   }
+
+   output "pygreeter_instance_ip_addresses" {
+       value = module.pygreeter.instance_ip_addresses
+   }
+   ```
+
+### gogreeter
+
+1. Add the newly created module within the `main.tf` file and pass the name
+   `gogreeter` and the variable `ssh_public_key` to it.
+
+   ```tf
+   module "gogreeter" {
+     source         = "./instance-pool-behind-loadbalancer"
+     name           = "gogreeter"
+     ssh_public_key = var.ssh_public_key
+   }
+   ```
+
+2. Create two outputs within the `outputs.tf` file.
+
+   ```tf
+   output "gogreeter_nlb_ip_address" {
+       value = module.gogreeter.nlb_ip_address
+   }
+
+   output "gogreeter_instance_ip_addresses" {
+       value = module.gogreeter.instance_ip_addresses
+   }
+   ```
+
+### Create the Infrastructure
+
+1. Reinitialize OpenTofu
+
+   ```bash
+   tofu init
+   ```
+
+2. Set the previously created API key and secret as environmental variable
+   (replace the KEY and SECRET after the equal sign)
+
+   ```bash
+   export EXOSCALE_API_KEY=KEY
+   export EXOSCALE_API_SECRET=SECRET
+   ```
+
+3. Get the plan from OpenTofu
+
+   ```bash
+   tofu plan
+   ```
+
+   Enter the content of `id_exoscale.pub` as `ssh_public_key`. Then make sure
+   that everything looks correct and nothing is missing.
+
+4. Apply the infrastructure
+
+   ```bash
+   tofu apply
+   ```
+
+   Enter the content of `id_exoscale.pub` as `ssh_public_key`. Type `yes` to
+   create the infrastructure. Write down the outputs you get from OpenTofu.
+
+If you commit the infrastructure as code to a VCS use [the following](https://github.com/github/gitignore/blob/main/Terraform.gitignore)
+git ignore file.
+
+### Creating an Ansible Playbook
+
+1. Create a new folder named `greeting-infrastructure-setup`
+2. Create a new file named `hosts.yaml`
+3. Add the following content (replace `PYGREETER_*` and `GOGREETER_*` with the
+   `instance_ip_addresses` outputs from OpenTofu, in case you do not have the
+   outputs anymore execute `tofu output`)
+
+   ```yaml
+   ---
+   py:
+     hosts:
+       py01:
+         ansible_host: "PYGREETER_IP_1"
+       py02:
+         ansible_host: "PYGREETER_IP_2"
+   go:
+     hosts:
+       go01:
+         ansible_host: "GOGREETER_IP_1"
+       go02:
+         ansible_host: "GOGREETER_IP_2"
+   ```
+
+4. Add a file named `vars.yaml`
+5. Add the following content (replace SSH_PATH with the directory your
+   previously created ssh key is in)
+
+   ```yaml
+   ---
+   ansible_user: "ubuntu"
+   ansible_ssh_private_key_file: "SSH_PATH/id_exoscale"
+   ```
+
+6. Create a file named `playbook.yaml`
+
+### pygreeter
+
+1. Add a play without any tasks for setting up the pygreeter application that
+   includes the previously created variables and targets all the py hosts.
+
+   ```yaml
+   ---
+   - name: "Set Up pygreeter"
+     hosts: "py"
+     vars_files:
+       - "./vars.yaml"
+   ```
+
+2. Add a task that makes sure the instances are pingable
+
+   ```yaml
+   tasks:
+     - name: "Ping Instance"
+       ansible.builtin.ping: {}
+   ```
+
+3. Execute the playbook (trust the hosts by typing `yes`)
+
+   ```bash
+   ansible-playbook -i hosts.yaml playbook.yaml
+   ```
+
+4. Add a task to install the dependencies
+
+   ```yaml
+   - name: "Install Dependencies"
+     become: true
+     ansible.builtin.apt:
+       pkg:
+         - "acl"
+         - "python3"
+         - "python3-pip"
+       update_cache: true
+   ```
+
+5. Add a task to create a user that will execute the application
+
+   ```yaml
+   - name: "Create a User"
+     become: true
+     ansible.builtin.user:
+       name: "pygreeter"
+   ```
+
+6. Add a task to clone the git repository of pygreeter (replace USER with your
+   GitHub username)
+
+   ```yaml
+   - name: "Clone the pygreeter Repository"
+     become: true
+     become_user: "pygreeter"
+     ansible.builtin.git:
+       repo: "https://github.com/USER/pygreeter.git"
+       dest: "/home/pygreeter/app"
+       version: "main"
+   ```
+
+7. Add a task to install the python requirements
+
+   ```yaml
+   - name: "Install Python Requirements"
+     become: true
+     become: "pygreeter"
+     ansible.builtin.pip:
+       requirements: "/home/pygreeter/app/requirements.txt"
+   ```
+
+8. Create the pygreeter service in the file `pygreeter.service`
+
+   ```text
+   [Unit]
+   Description=Service of pygreeter
+   After=multi-user.target
+
+   [Service]
+   Type=simple
+   ExecStart=python3 /home/pygreeter/app/main.py
+   User=pygreeter
+
+   [Install]
+   WantedBy=multi-user.target
+   ```
+
+9. Add a task to create the service file
+
+   ```yaml
+   - name: "Create the pygreeter Service"
+     become: true
+     ansible.builtin.copy:
+       src: "./pygreeter.service"
+       dest: "/usr/lib/systemd/system/pygreeter.service"
+       owner: "root"
+       group: "root"
+   ```
+
+10. Add a task to start the newly created service
+
+    ```yaml
+    - name: "Start the pygreeter Service"
+      become: true
+      ansible.builtin.systemd_service:
+        name: "pygreeter.service"
+        state: "started"
+        daemon_reload: true
+    ```
+
+11. Let Ansible do the setup for you
+
+    ```bash
+    ansible-playbook -i hosts.yaml playbook.yaml
+    ```
+
+Your application is now setup and reachable on port 8080 of the instances. The
+network load balancer you created will start to balance the traffic to the
+instances as soon as the health check becomes successful. Wait 5 minutes and
+then open the IP address of your pygreeter network load balancer on port 8080 in
+the browser. You should see the already known greeting.
+
+### gogreeter
+
+1. Add a play without any tasks for setting up the gogreeter application that
+   includes the previously created variables and targets all the go hosts.
+
+   ```yaml
+   - name: "Set Up gogreeter"
+     hosts: "go"
+     vars_files:
+       - "./vars.yaml"
+   ```
+
+2. Add a task that makes sure the instances are pingable
+
+   ```yaml
+   tasks:
+     - name: "Ping Instance"
+       ansible.builtin.ping: {}
+   ```
+
+3. Execute the playbook (trust the hosts by typing `yes`)
+
+   ```bash
+   ansible-playbook -i hosts.yaml playbook.yaml
+   ```
+
+4. Add a task to install the dependencies
+
+   ```yaml
+   - name: "Install Dependencies"
+     become: true
+     ansible.builtin.apt:
+       pkg:
+         - "acl"
+         - "golang-go"
+       update_cache: true
+   ```
+
+5. Add a task to create a user that will execute the application
+
+   ```yaml
+   - name: "Create a User"
+     become: true
+     ansible.builtin.user:
+       name: "gogreeter"
+   ```
+
+6. Add a task to clone the git repository of gogreeter (replace USER with your
+   GitHub username)
+
+   ```yaml
+   - name: "Clone the gogreeter Repository"
+     become: true
+     become_user: "gogreeter"
+     ansible.builtin.git:
+       repo: "https://github.com/USER/gogreeter.git"
+       dest: "/home/gogreeter/app"
+       version: "main"
+   ```
+
+7. Add a task to build the gogreeter application
+
+   ```yaml
+   - name: "Build the gogreeter Application"
+     become: true
+     become_user: "gogreeter"
+     ansible.builtin.command:
+       cmd: "go build -o ./bin/gogreeter ./cmd/gogreeter"
+       chdir: "/home/gogreeter/app"
+       creates: "/home/gogreeter/app/bin/gogreeter"
+   ```
+
+8. Create the gogreeter service in the file `gogreeter.service`
+
+   ```text
+   [Unit]
+   Description=Service of gogreeter
+   After=multi-user.target
+
+   [Service]
+   Type=simple
+   ExecStart=/home/gogreeter/app/bin/gogreeter
+   User=gogreeter
+
+   [Install]
+   WantedBy=multi-user.target
+   ```
+
+9. Add a task to create the service file
+
+   ```yaml
+   - name: "Create the gogreeter Service"
+     become: true
+     ansible.builtin.copy:
+       src: "./gogreeter.service"
+       dest: "/usr/lib/systemd/system/gogreeter.service"
+       owner: "root"
+       group: "root"
+   ```
+
+10. Add a task to start the newly created service
+
+    ```yaml
+    - name: "Start the gogreeter Service"
+      become: true
+      ansible.builtin.systemd_service:
+        name: "gogreeter.service"
+        state: "started"
+        daemon_reload: true
+    ```
+
+11. Let Ansible do the setup for you
+
+    ```bash
+    ansible-playbook -i hosts.yaml playbook.yaml
+    ```
+
+Your application is now setup and reachable on port 8080 of the instances. The
+network load balancer you created will start to balance the traffic to the
+instances as soon as the health check becomes successful. Wait 5 minutes and
+then open the IP address of your gogreeter network load balancer on port 8080 in
+the browser. You should see the already known greeting.
+
+### Deleting the Infrastructure
+
+After finishing the exercise you can destroy the infrastructure to prevent the
+creation of additional costs. As we only used Ansible for the application
+configuration we can destroy the infrastructure with OpenTofu only.
+
+1. Switch into the `greeting-infrastructure` folder
+1. Destroy the infrastructure
+
+   ```bash
+   tofu destroy
+   ```
+
+## 13. Collect Greeting Metrics
+
+In this exercise you are going to collect metrics about the greeting behavior
+of your greeting services.
+
+### pygreeter
+
+To have the information related to the greetings we have to include some
+Prometheus specific code into our business logic.
+
+1. Switch into the `pygreeter` folder
+2. Activate the virtual environment
+
+   ```bash
+   source .venv/bin/activate
+   ```
+
+3. Install the `prometheus-client` dependency
+
+   ```bash
+   pip install prometheus-client
+   ```
+
+4. Freeze the dependencies
+
+   ```bash
+   pip freeze > requirements.txt
+   ```
+
+5. Import the `Counter` from `prometheus-client` in the `greeter.py` file
+
+   ```python
+   from prometheus_client import Counter
+   ```
+
+6. Add a generic and specific counter in the `greeter.py` file after the
+   imports
+
+   ```python
+   generic_counter = Counter(
+       "pygreeter_greetings_generic_total", "Greetings without a name specified."
+   )
+   specific_counter = Counter(
+       "pygreeter_greetings_specific_total", "Greetings with a name specified."
+   )
+   ```
+
+7. Increase the generic counter before returning within the if statement
+
+   ```python
+   generic_counter.inc()
+   ```
+
+8. Increase the specific counter before returning
+
+   ```python
+   specificer_counter.inc()
+   ```
+
+9. Import the `make_asgi_app` function from `prometheus_client` module in the
+   `main.py` file
+
+   ```python
+   from prometheus_client import make_asgi_app
+   ```
+
+10. Register the metrics endpoint in `main.py` before the entry point
+
+    ```python
+    metrics_app = make_asgi_app()
+    app.mount("/metrics", metrics_app)
+    ```
+
+### gogreeter
+
+To have the information related to the greetings we have to include some
+Prometheus specific code into our business logic.
+
+1. Switch into the `gogreeter` folder
+2. Install the Prometheus dependencies
+
+   ```bash
+   go get github.com/prometheus/client_golang/prometheus
+   go get github.com/prometheus/client_golang/prometheus/promauto
+   go get github.com/prometheus/client_golang/prometheus/promhttp
+   ```
+
+3. Add the `prometheus` and `promauto` dependency in the imports of the
+   `greeter/greeter.go` file
+
+   ```go
+   "github.com/prometheus/client_golang/prometheus"
+   "github.com/prometheus/client_golang/prometheus/promauto"
+   ```
+
+4. Add a generic and a specific counter as a variable before the `Greet`
+   function in the `greeter/greeter.go` file
+
+   ```go
+   var (
+       genericCounter = promauto.NewCounter(prometheus.CounterOpts{
+           Name: "gogreeter_greetings_generic_total",
+           Help: "Greetings without a name specified.",
+       })
+       specificCounter = promauto.NewCounter(prometheus.CounterOpts{
+           Name: "gogreeter_greetings_specific_total",
+           Help: "Greetings with a name specified.",
+       })
+   )
+   ```
+
+5. Increase the generic counter before returning within the if statement
+
+   ```go
+   genericCounter.Inc()
+   ```
+
+6. Increase the specific counter before returning
+
+   ```go
+   specificCounter.Inc()
+   ```
+
+7. Import the `promhttp` and `adaptor` dependencies in the imports of
+   `cmd/greeter/main.go`
+
+   ```go
+   "github.com/gofiber/fiber/v2/middleware/adaptor"
+   "github.com/prometheus/client_golang/prometheus/promhttp"
+   ```
+
+8. Register the metrics endpoint after the first `Get` call
+
+   ```go
+   app.Get("/metrics", adaptor.HTTPHandler(promhttp.Handler()))
+   ```
+
+### Prometheus Configuration
+
+For Prometheus to be aware which services to scrape metrics from you have to
+setup a configuration file.
+
+1. Create a new folder named `greeting-observability`
+2. Create a file named `prometheus.yaml`
+3. Add the following content
+
+   ```yaml
+   global:
+     scrape_interval: "5s"
+     evaluation_interval: "5s"
+
+   scrape_configs:
+     - job_name: "pygreeter"
+       static_configs:
+         - targets:
+             - "pygreeter:8080"
+     - job_name: "gogreeter"
+       static_configs:
+         - targets:
+             - "gogreeter:8080"
+   ```
+
+### Prometheus Setup
+
+Now we want to actually start Prometheus amongst the applications. To do that
+you have to setup a container compose file.
+
+1. Within the `greeting-observability` folder create a file named `compose.yaml`
+2. Make sure you have the latest container images that have been built by your
+   CI/CD or manually (replace USER with your GitHub username)
+
+   ```bash
+   podman pull ghcr.io/USER/pygreeter
+   podman pull localhost:8082/gogreeter
+   ```
+
+3. Add the following content (replace USER with your GitHub username)
+
+   ```yaml
+   version: "3"
+   services:
+     prometheus:
+       image: "prom/prometheus"
+       ports:
+         - "9090:9090"
+       volumes:
+         - "./prometheus.yaml:/etc/prometheus/prometheus.yml"
+     pygreeter:
+       image: "ghcr.io/USER/pygreeter"
+       ports:
+         - "9091:8080"
+     gogreeter:
+       image: "localhost:8082/gogreeter"
+       ports:
+         - "9092:8080"
+   ```
+
+4. Access both pygreeter and gogreter on http://localhost:9091 or
+   http://localhost:9092 and provide the name query parameter in some cases.
+5. Open Prometheus on http://localhost:9090 and search for
+   `pygreeter_greetings_generic_total or gogreeter_greetings_generic_total`
+6. Click on Graph
+
+You know see the history of counter increasing thanks to Prometheus.
+
+## 14. Creating Alerts
+
+In this exercise you are going to create an alert based on the previously
+created metrics. For that you are going to add Alertmanager to the container
+compose file and then define conditions that are forwarded to Alertmanager which
+then sends it to a service which just logs the request body.
+
+### Configure an Alert Condition
+
+In this specific case you are going to create an Alert if the count of generic
+greetings within a minute was more than 5. This is because we want other
+applications to mainly use our service with a name specified and catch
+not configured services using our API (be aware that this is a made up example
+that does not necessarily have to make sense).
+
+1. Open the `prometheus.yaml` file
+2. Add the following config
+
+   ```yaml
+   alerting:
+     alertmanagers:
+       - static_configs:
+           - targets:
+               - "alertmanager:9093"
+
+   rule_files:
+     - "/etc/prometheus/rules.yml"
+   ```
+
+3. Create a file named `rules.yaml`
+
+   ```yaml
+   groups:
+     - name: "Greetings"
+       rules:
+         - alert: "GenericOverSpecific"
+           expr: "sum(increase(gogreeter_greetings_generic_total[1m])) > 5"
+         - alert: "GenericOverSpecific"
+           expr: "sum(increase(pygreeter_greetings_generic_total[1m])) > 5"
+   ```
+
+4. Include the file within the volumes section of the `prometheus` service in
+   the `compose.yaml` file
+
+   ```yaml
+   - "./rules.yaml:/etc/prometheus/rules.yml"
+   ```
+
+### Add an HTTP Logger
+
+1. Open the `compose.yaml` file
+2. Add the following service
+
+   ```yaml
+   httplogger:
+     image: "bfosberry/http-logger"
+   ```
+
+### Add Alertmanager
+
+1. Create a file named `alertmanager.yaml`
+2. Add the following content
+
+   ```yaml
+   route:
+     receiver: "httplogger"
+
+   receivers:
+     - name: "httplogger"
+       webhook_config:
+         url: "http://httplogger:8090"
+   ```
+
+3. Open the `compose.yaml` file
+4. Add the following service
+
+   ```bash
+   alertmanager:
+     image: "quay.io/prometheus/alertmanager"
+     ports:
+       - "9093:9093"
+     volumes:
+       - "./alertmanager.yaml:/etc/alertmanager/alertmanager.yml"
+   ```
+
+You can now open pygreeter (http://localhost:9091) and gogreeter
+(http://localhost:9092) in your browser. Refresh both services at least 5 times
+within a short amount of time. Then open Alertmanager (http://localhost:9093)
+where you should see an alert. Finally, check the logs of your Podman compose
+where you should see the output sent to the receiver after some time.
+
+## 15. Create a Dashboard
+
+In this exercise you are going to visualize the metrics and alerts within
+Grafana. For this you will first add Grafana to your observability stack and
+then create two dashboards that contain a comparison between generic and
+specific greetings and an alert overview.
+
+### Add Grafana
+
+1. Open the file named `compose.yaml`
+2. Add the following content
+
+   ```yaml
+   grafana:
+     image: "grafana/grafana-enterprise"
+     ports:
+       - "3000:3000"
+   ```
+
+3. Open Grafana on http://localhost:3000
+4. Login as the user `admin` with password `admin`
+5. Change the password
+
+### Configure Prometheus Connection
+
+1. Click on the burge menu next to "Home"
+2. Click on "Connections"
+3. Click "Add new connection"
+4. Select "Prometheus"
+5. Click "Add new data source"
+6. As name enter "Prometheus"
+7. Under "Connection" enter "http://prometheus:9090" as "Prometheus server URL"
+8. Click "Save & test"
+
+### pygreeter
+
+1. Click "+" on the top right
+2. Click "New dashboard"
+3. Click "Add visualization"
+4. Select "Prometheus" as data source
+5. Click "Time series"
+6. Select "Stat" as type
+7. On the right name the pane "Comparison"
+8. Under "Thresholds" delete the one for "80"
+9. In the "Query" named "A" select the metric "pygreeter_greetings_generic_total"
+10. Click "Options"
+11. Switch "Legend" to "Custom"
+12. Enter "Generic" as "Legend"
+13. Click "Add query"
+14. In the "Query" named "B" select the metric
+    "pygreeter_greetings_specific_total"
+15. Click "Options"
+16. Switch "Legend" to "Custom"
+17. Enter "Specific" as "Legend"
+18. Click "Apply" on the top right
+19. Click "Add"
+20. Click "Visualization"
+21. Click "Time series"
+22. Select "Alert list" as type
+23. On the right name the pane "Alerts"
+24. Click "Apply" on the top right
+25. Click the save icon and as title user "pygreeter"
+
+### gogreeter
+
+1. Click "+" on the top right
+2. Click "New dashboard"
+3. Click "Add visualization"
+4. Select "Prometheus" as data source
+5. Click "Time series"
+6. Select "Stat" as type
+7. On the right name the pane "Comparison"
+8. Under "Thresholds" delete the one for "80"
+9. In the "Query" named "A" select the metric "gogreeter_greetings_generic_total"
+10. Click "Options"
+11. Switch "Legend" to "Custom"
+12. Enter "Generic" as "Legend"
+13. Click "Add query"
+14. In the "Query" named "B" select the metric
+    "gogreeter_greetings_specific_total"
+15. Click "Options"
+16. Switch "Legend" to "Custom"
+17. Enter "Specific" as "Legend"
+18. Click "Apply" on the top right
+19. Click "Add"
+20. Click "Visualization"
+21. Click "Time series"
+22. Select "Alert list" as type
+23. On the right name the pane "Alerts"
+24. Click "Apply" on the top right
+25. Click the save icon and as title user "gogreeter"
