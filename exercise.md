@@ -17,7 +17,6 @@ The following tools are used in this exercise:
 - `podman-compose`
 - `k3s`
 - `kubectl`
-- `aws-cli`
 - `opentofu`
 - `ansible`
 
@@ -3344,8 +3343,11 @@ specific greetings and an alert overview.
 ## 16. Trace Endpoint of Applications
 
 In this exercise you are going to add tracing to your application. For that you
-will first have to add tracing to your observability stack and then use the
-OpenTelemetry SDK within your applications.
+will first have to add Jaeger to your observability stack and then use the
+OpenTelemetry SDK within your applications. The OpenTelemetry SDK provides you
+with a way to do metrics, tracing and logging independent of the solutions you
+are using. For example you would be able to switch to AWS X-Ray or Grafana Tempo
+without having to rewrite the whole tracing a second time.
 
 ### Add Jaeger
 
@@ -3372,4 +3374,230 @@ OpenTelemetry SDK within your applications.
 
 ### pygreeter
 
+1. Activate the virtual environment
+
+   ```bash
+   source .venv/bin/activate
+   ```
+
+2. Install the following dependencies
+
+   ```bash
+   pip install opentelemetry-api opentelemetry-sdk opentelemetry-exporter-otlp-proto-grpc opentelemetry-instrumentation-fastapi
+   ```
+
+3. Open the file named `main.py`
+4. Add the following imports at the top
+
+   ```python
+   from opentelemetry import trace
+   from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+   from opentelemetry.sdk.resources import SERVICE_NAME, Resource
+   from opentelemetry.sdk.trace import TracerProvider
+   from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+   from opentelemetry.sdk.trace.export import BatchSpanProcessor
+   ```
+
+5. After the Prometheus part add the following code
+
+   ```python
+   resource = Resource(attributes={SERVICE_NAME: "pygreeter"})
+   provider = TracerProvider(resource=resource)
+   processor = BatchSpanProcessor(OTLPSpanExporter(endpoint="jaeger:4317", insecure=True))
+   provider.add_span_processor(processor)
+   trace.set_tracer_provider(provider)
+
+
+   FastAPIInstrumentor.instrument_app(app)
+   ```
+
+6. Open the file named `greeter.py`
+7. Add the following imports at the top
+
+   ```python
+   from opentelemetry import trace
+   from random import randrange
+   from time import sleep
+   ```
+
+8. After the counters add the following code to create a tracer
+
+   ```python
+   tracer = trace.get_tracer("pygreeter.greeter")
+   ```
+
+9. After the greet function add the following code
+
+   ```python
+   def validate_name(_: str) -> None:
+       seconds = randrange(0, 4)
+       sleep(seconds)
+   ```
+
+10. Within the greet function after the if statement add the following code
+
+    ```python
+    with tracer.start_as_current_span("validate-name"):
+        validate_name(cleaned_name)
+    ```
+
+This will now automatically add traces for all your incoming requests. You have
+also added a manual instrumentation at the last step where you create a specific
+span for the name validation function. Make sure that your CI/CD rebuilds your
+container image and make sure to fetch it, then restart the container compose.
+
 ### gogreeter
+
+1. Install the following dependencies
+
+   ```bash
+   go get "go.opentelemetry.io/otel" \
+      "go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc" \
+      "go.opentelemetry.io/otel/sdk/resource" \
+      "go.opentelemetry.io/otel/sdk/trace" \
+      "go.opentelemetry.io/otel/semconv/v1.21.0" \
+      "github.com/gofiber/contrib/otelfiber/v2"
+   ```
+
+2. Open the file named `main.go` in `cmd/gogreeter`
+3. Add the top add the following imports
+
+   ```go
+   "go.opentelemetry.io/otel"
+   "go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+   "go.opentelemetry.io/otel/sdk/resource"
+   "go.opentelemetry.io/otel/sdk/trace"
+   semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+   "github.com/gofiber/contrib/otelfiber/v2"
+   ```
+
+4. Add the following function add the bottom
+
+   ```go
+   func setupOpenTelemetryTracerProvider(ctx context.Context) *trace.TracerProvider {
+       resource, err := resource.Merge(
+           resource.Default(),
+           resource.NewWithAttributes(
+               semconv.SchemaURL,
+               semconv.ServiceName("gogreeter"),
+           ),
+       )
+       if err != nil {
+           log.Fatal("could not setup OpenTelemetry", err)
+       }
+       exporter, err := otlptracegrpc.New(ctx, otlptracegrpc.WithEndpoint("jaeger:4317"), otlptracegrpc.WithInsecure())
+       if err != nil {
+           log.Fatal("could not setup OpenTelemetry", err)
+       }
+       return trace.NewTracerProvider(
+           trace.WithResource(resource),
+           trace.WithBatcher(exporter),
+       )
+   }
+   ```
+
+5. Add the following code add the top of the main function
+
+   ```go
+   ctx := context.Background()
+   tracerProvider := setupOpenTelemetryTracerProvider(ctx)
+   defer func() {
+       if err := tracerProvider.Shutdown(ctx); err != nil {
+       	l  log.Fatal("could not shutdown tracer provider", err)
+       }
+   }()
+   otel.SetTracerProvider(tracerProvider)
+   ```
+
+6. Open the file named `greeter.go` in the folder `greeter`
+7. Add the following imports
+
+   ```go
+   "context"
+   "math/rand"
+   "time"
+   "go.opentelemetry.io/otel"
+   ```
+
+8. Add the following to the `var` block
+
+   ```go
+   tracer = otel.GetTracerProvider().Tracer("Greeter")
+   ```
+
+9. Add the following function at the bottom of the file
+
+   ```go
+   func validateName(ctx context.Context, _ string) {
+       _, span := tracer.Start(ctx, "validate-name")
+       defer span.End()
+       seconds := time.Second * time.Duration(rand.Intn(4))
+       time.Sleep(seconds)
+   }
+   ```
+
+10. Change the signature of the `Greet` function to the following
+
+    ```go
+    Greet(ctx context.Context, name string) string
+    ```
+
+11. Add the following code after the if statement
+
+    ```go
+    validateName(ctx, cleanedName)
+    ```
+
+12. Open the file named `greeter_test.go` in the folder `greeter`
+13. Before line 31 add the following
+
+    ```go
+    ctx := context.Background()
+    ```
+
+14. Change line 34 to the following
+
+    ```go
+    output := Greet(ctx, testCase.name)
+    ```
+
+15. Open the file named `main.go` in the folder `cmd/gogreeter`
+16. Change line 43 to the following
+
+    ```go
+    output := greeter.Greet(c.UserContext(), input)
+    ```
+
+17. After line 31 add the following
+
+    ```go
+    app.Use(otelfiber.Middleware())
+    ```
+
+18. Open the file named `main.go` in the folder `cmd/gogreeter-lambda`
+19. Change line 15 to the following
+
+    ```go
+    greeting := greeter.Greet(ctx, name)
+    ```
+
+This will now automatically add traces for all your incoming requests. You have
+also added a manual instrumentation at the last step where you create a specific
+span for the name validation function. Make sure that your CI/CD rebuilds your
+container image and make sure to fetch it, then restart the container compose.
+
+### Generate Traces
+
+1. Open pygreeter on http://localhost:9091 and access it the generic and
+   specific way multiple times.
+2. Open gogreeter on http://localhost:9092 and access it the generic and
+   specific way multiple times.
+
+This should now have propagated some traces to Jaeger.
+
+### Checkout the Traces
+
+1. Open Jaeger on http://localhost:16686
+2. Select either "pygreeter" or "gogreeter" on the right
+3. Click "Find Traces"
+4. Click on one of the traces on the right and check how they look
