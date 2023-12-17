@@ -3259,7 +3259,7 @@ specific greetings and an alert overview.
 ### Add Grafana
 
 1. Open the file named `compose.yaml`
-2. Add the following content
+2. Add the following service
 
    ```yaml
    grafana:
@@ -3340,3 +3340,36 @@ specific greetings and an alert overview.
 23. On the right name the pane "Alerts"
 24. Click "Apply" on the top right
 25. Click the save icon and as title user "gogreeter"
+
+## 16. Trace Endpoint of Applications
+
+In this exercise you are going to add tracing to your application. For that you
+will first have to add tracing to your observability stack and then use the
+OpenTelemetry SDK within your applications.
+
+### Add Jaeger
+
+1. Open the file named `compose.yaml`
+2. Add the following service
+
+   ```yaml
+   jaeger:
+     image: "jaegertracing/all-in-one"
+     environment:
+       - "COLLECTOR_ZIPKIN_HOST_PORT=:9411"
+     ports:
+       - "6831:6831/udp"
+       - "6832:6832/udp"
+       - "5778:5778"
+       - "16686:16686"
+       - "4317:4317"
+       - "4318:4318"
+       - "14250:14250"
+       - "14268:14268"
+       - "14269:14269"
+       - "9411:9411"
+   ```
+
+### pygreeter
+
+### gogreeter
